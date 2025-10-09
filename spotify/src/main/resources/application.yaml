@@ -4,6 +4,11 @@ server:
     context-path: /spotify
 
 spring:
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
   datasource:
     url: jdbc:mysql://localhost:3306/spotify
     driverClassName: "com.mysql.cj.jdbc.Driver"
@@ -17,3 +22,8 @@ jwt:
   signerKey: "b2yoP+BXkNpTkT3UA7TSAHxqoLxuzgZIRmscynx2zbm5PHbtt3U+JB5N1G6AIrNg"
   valid-duration: 3600
   refreshable-duration: 7200
+
+cloudinary:
+  cloud-name: "dfsoeiui1"
+  api-key: "734945962382533"
+  api-secret: "T0MGMwIJS7mDNpeB-IzkvmzwJ3U"

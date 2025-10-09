@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/artist")
 @RequiredArgsConstructor
@@ -17,12 +19,21 @@ public class ArtistController {
     ArtistService artistService;
 
     @PostMapping("/create")
-    ApiResponse<ArtistResponse> createArtist(ArtistRequest request){
+    ApiResponse<ArtistResponse> createArtist(@ModelAttribute ArtistRequest request){
         ArtistResponse response = artistService.createArtist(request);
         return ApiResponse.<ArtistResponse>builder()
                 .code(1000)
                 .message("Artist has been created!")
                 .result(response)
+                .build();
+    }
+
+    @GetMapping("/all")
+    ApiResponse<List<ArtistResponse>> getAllArtists(){
+        return ApiResponse.<List<ArtistResponse>>builder()
+                .code(1000)
+                .message("All artists are fetched!")
+                .result(artistService.getAllArtists())
                 .build();
     }
 

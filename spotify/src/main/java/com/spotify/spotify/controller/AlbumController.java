@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/albums")
@@ -52,6 +54,15 @@ public class AlbumController {
         return ApiResponse.<Void>builder()
                 .code(1000)
                 .message("Album has been deleted!")
+                .build();
+    }
+
+    @GetMapping("/search")
+    ApiResponse<List<AlbumResponse>> searchAlbum(@RequestBody String keyword){
+        return ApiResponse.<List<AlbumResponse>>builder()
+                .code(1000)
+                .message("Result")
+                .result(albumService.searchAlbum(keyword))
                 .build();
     }
 }

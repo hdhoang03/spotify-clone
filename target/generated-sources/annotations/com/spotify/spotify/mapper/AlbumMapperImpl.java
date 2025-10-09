@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-10-01T10:20:40+0700",
+    date = "2025-10-06T10:42:29+0700",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.5 (Oracle Corporation)"
 )
 @Component
@@ -46,6 +46,7 @@ public class AlbumMapperImpl implements AlbumMapper {
         AlbumResponse.AlbumResponseBuilder albumResponse = AlbumResponse.builder();
 
         albumResponse.avatarUrl( album.getAlbumUrl() );
+        albumResponse.id( album.getId() );
         albumResponse.name( album.getName() );
         albumResponse.description( album.getDescription() );
         albumResponse.songs( songSetToSongResponseList( album.getSongs() ) );

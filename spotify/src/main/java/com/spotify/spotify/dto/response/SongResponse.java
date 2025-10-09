@@ -14,7 +14,7 @@ public class SongResponse {
     String title;
     String artist;
     String album;
-    String genre;
+    String genre;//Category
     String coverUrl;
     String audioUrl;
     String uploadedBy;

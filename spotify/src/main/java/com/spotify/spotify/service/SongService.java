@@ -1,5 +1,7 @@
 package com.spotify.spotify.service;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.spotify.spotify.dto.request.SongRequest;
 import com.spotify.spotify.dto.response.SongResponse;
 import com.spotify.spotify.entity.Song;
@@ -22,6 +24,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -30,8 +33,9 @@ public class SongService {
     UserRepository userRepository;
     SongRepository songRepository;
     SongMapper songMapper;
+    Cloudinary cloudinary;
 
-    private static final String UPLOAD_DIR = "/uploads/";
+    private static final String UPLOAD_DIR = "uploads/";
 
     @PreAuthorize("hasRole('ADMIN')")
     public SongResponse createSong(SongRequest request){
@@ -41,8 +45,11 @@ public class SongService {
 
         Song song = songMapper.toSong(request);
 
-        String coverPath = saveFile(request.getCoverUrl(), "covers");
-        String audioPath = saveFile(request.getAudioUrl(), "audios");
+//        String coverPath = saveFile(request.getCoverUrl(), "covers");
+//        String audioPath = saveFile(request.getAudioUrl(), "audios");
+
+        String coverPath = saveFileCloud(request.getCoverUrl(), "covers");
+        String audioPath = saveFileCloud(request.getAudioUrl(), "audios");
 
         song.setCoverUrl(coverPath);
         song.setAudioUrl(audioPath);
@@ -85,7 +92,23 @@ public class SongService {
         songRepository.deleteById(id);
     }
 
-    private String saveFile(MultipartFile file, String folder){
+    private String saveFileCloud(MultipartFile file, String folder){ //cloudinary
+        if(file == null || file.isEmpty()) return null;
+        try {
+            Map uploadResult = cloudinary.uploader().upload(
+                    file.getBytes(),
+                    ObjectUtils.asMap(
+                            "folder", folder,
+                            "resource_type", "auto" //Cho phép up ảnh, mp3 và mp4
+                    )
+            );
+            return uploadResult.get("secure_url").toString(); //Trả về URL Public
+        } catch (Exception e){
+            throw new AppException(ErrorCode.FILE_UPLOAD_FAILED);
+        }
+    }
+
+    private String saveFile(MultipartFile file, String folder){ //local
         if(file == null || file.isEmpty()) return null;
         try {
             Path dirPath = Paths.get(UPLOAD_DIR + folder);

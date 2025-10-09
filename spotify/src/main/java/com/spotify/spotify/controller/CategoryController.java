@@ -19,11 +19,11 @@ public class CategoryController {
     CategoryService categoryService;
 
     @PostMapping("/create")
-    ApiResponse<CategoryResponse> createAlbum(@RequestBody CategoryRequest request){
+    ApiResponse<CategoryResponse> createCategory(@RequestBody CategoryRequest request){
         CategoryResponse response = categoryService.createCategory(request);
         return ApiResponse.<CategoryResponse>builder()
                 .code(1000)
-                .message("Album has been created!")
+                .message("Category has been created!")
                 .result(response)
                 .build();
     }
@@ -74,6 +74,15 @@ public class CategoryController {
                 .code(1000)
                 .message("Categories search result!")
                 .result(responses)
+                .build();
+    }
+
+    @PostMapping("/{categoryId}/songs/{songId}")
+    ApiResponse<CategoryResponse> addSongToCategory(@PathVariable String categoryId, @PathVariable String songId){
+        return ApiResponse.<CategoryResponse>builder()
+                .code(1000)
+                .message("Song has been added into category.")
+                .result(categoryService.addSongToCategory(categoryId, songId))
                 .build();
     }
 }

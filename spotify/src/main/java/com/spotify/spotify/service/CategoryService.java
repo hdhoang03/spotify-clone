@@ -3,10 +3,12 @@ package com.spotify.spotify.service;
 import com.spotify.spotify.dto.request.CategoryRequest;
 import com.spotify.spotify.dto.response.CategoryResponse;
 import com.spotify.spotify.entity.Category;
+import com.spotify.spotify.entity.Song;
 import com.spotify.spotify.exception.AppException;
 import com.spotify.spotify.exception.ErrorCode;
 import com.spotify.spotify.mapper.CategoryMapper;
 import com.spotify.spotify.repository.CategoryRepository;
+import com.spotify.spotify.repository.SongRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -21,6 +23,7 @@ import java.util.stream.Collectors;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class CategoryService {
 
+    SongRepository songRepository;
     CategoryRepository categoryRepository;
     CategoryMapper categoryMapper;
 
@@ -32,6 +35,23 @@ public class CategoryService {
         Category category = categoryMapper.toCategory(request);
         category.setActive(true);
         category = categoryRepository.save(category);
+
+        return categoryMapper.toCategoryResponse(category);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public CategoryResponse addSongToCategory(String categoryId, String songId){
+        Category category = categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
+
+        Song song = songRepository.findById(songId)
+                .orElseThrow(() -> new AppException(ErrorCode.SONG_NOT_FOUND));
+
+//        category.getSongs().add(song);
+//        categoryRepository.save(category);
+
+        song.setCategory(category);
+        songRepository.save(song);
 
         return categoryMapper.toCategoryResponse(category);
     }

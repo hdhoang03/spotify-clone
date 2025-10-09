@@ -1,5 +1,7 @@
 package com.spotify.spotify.service;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.spotify.spotify.dto.request.AlbumRequest;
 import com.spotify.spotify.dto.response.AlbumResponse;
 import com.spotify.spotify.entity.Album;
@@ -21,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -31,6 +34,7 @@ public class AlbumService {
     AlbumRepository albumRepository;
     ArtistRepository artistRepository;
     AlbumMapper albumMapper;
+    Cloudinary cloudinary;
 
     private static final String UPLOAD_DIR = "uploads/albums/";
 
@@ -41,7 +45,8 @@ public class AlbumService {
         }
 
         Album album = albumMapper.toAlbum(request);
-        String avatarPath = saveFile(request.getAvatarUrl());
+//        String avatarPath = saveFile(request.getAvatarUrl());
+        String avatarPath = saveFileCloud(request.getAvatarUrl());
         album.setAlbumUrl(avatarPath);
 
         Artist artist = artistRepository.findById(request.getArtistId())
@@ -65,7 +70,8 @@ public class AlbumService {
 
         albumMapper.updateAlbum(album, request);
         if (request.getAvatarUrl() != null && !request.getAvatarUrl().isEmpty()){
-            String avatarPath = saveFile(request.getAvatarUrl());
+//            String avatarPath = saveFile(request.getAvatarUrl());
+            String avatarPath = saveFileCloud(request.getAvatarUrl());
             album.setAlbumUrl(avatarPath);
         }
         if (request.getArtistId() != null){
@@ -90,6 +96,21 @@ public class AlbumService {
                 .stream()
                 .map(albumMapper::toAlbumResponse)
                 .collect(Collectors.toList());
+    }
+
+    private String saveFileCloud(MultipartFile file){
+        if(file == null || file.isEmpty()) return null;
+        try {
+            Map uploadResult = cloudinary.uploader().upload(
+                    file.getBytes(),
+                    ObjectUtils.asMap(
+                            "resource_type", "auto"
+                    )
+            );
+            return uploadResult.get("secure_url").toString();
+        } catch (Exception e){
+            throw new AppException(ErrorCode.FILE_UPLOAD_FAILED);
+        }
     }
 
     private String saveFile(MultipartFile file){

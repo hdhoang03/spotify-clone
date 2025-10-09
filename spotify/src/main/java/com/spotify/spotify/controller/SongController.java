@@ -16,13 +16,22 @@ import org.springframework.web.bind.annotation.*;
 public class SongController {
     SongService songService;
 
-    @PostMapping("/create")
+    @PostMapping("/create") //Local
     ApiResponse<SongResponse> createSong(@ModelAttribute SongRequest request){
         SongResponse response = songService.createSong(request);
         return ApiResponse.<SongResponse>builder()
                 .code(1000)
                 .message("Song has been created!")
                 .result(response)
+                .build();
+    }
+
+    @PostMapping("/create2") //Cloudinary
+    ApiResponse<SongResponse> createSong2(@ModelAttribute SongRequest request){
+        return ApiResponse.<SongResponse>builder()
+                .code(1000)
+                .message("Song has been uploaded!")
+                .result(songService.createSong(request))
                 .build();
     }
 

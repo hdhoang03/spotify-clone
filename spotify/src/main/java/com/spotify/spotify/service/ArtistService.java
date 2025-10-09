@@ -1,5 +1,7 @@
 package com.spotify.spotify.service;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.spotify.spotify.dto.request.ArtistRequest;
 import com.spotify.spotify.dto.response.ArtistResponse;
 import com.spotify.spotify.entity.Artist;
@@ -19,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,6 +30,7 @@ import java.util.stream.Collectors;
 public class ArtistService {
     ArtistRepository artistRepository;
     ArtistMapper artistMapper;
+    Cloudinary cloudinary;
 
     private static final String UPLOAD_DIR = "uploads/artists/";
 
@@ -34,7 +38,8 @@ public class ArtistService {
     public ArtistResponse createArtist(ArtistRequest request){
         Artist artist = artistMapper.toArtist(request);
 
-        String avatarPath = saveFile(request.getAvatarUrl());
+//        String avatarPath = saveFile(request.getAvatarUrl());//local
+        String avatarPath = saveFileCloud(request.getAvatarUrl());//Up ảnh lên cloud
         artist.setAvatarUrl(avatarPath);
         artist = artistRepository.save(artist);
         return artistMapper.toArtistResponse(artist);
@@ -72,6 +77,21 @@ public class ArtistService {
         Artist artist = artistRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ARTIST_NOT_FOUND));
         return artistMapper.toArtistResponse(artist);
+    }
+
+    private String saveFileCloud(MultipartFile file){ //cloudinary
+        if(file == null || file.isEmpty()) return null;
+        try {
+            Map uploadResult = cloudinary.uploader().upload(
+                    file.getBytes(),
+                    ObjectUtils.asMap(
+                            "resource_type", "auto" //Cho phép up ảnh, mp3 và mp4
+                    )
+            );
+            return uploadResult.get("secure_url").toString(); //Trả về URL Public
+        } catch (Exception e){
+            throw new AppException(ErrorCode.FILE_UPLOAD_FAILED);
+        }
     }
 
     private String saveFile(MultipartFile file){
