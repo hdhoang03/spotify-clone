@@ -4,11 +4,13 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.spotify.spotify.dto.request.SongRequest;
 import com.spotify.spotify.dto.response.SongResponse;
+import com.spotify.spotify.entity.Album;
 import com.spotify.spotify.entity.Song;
 import com.spotify.spotify.entity.User;
 import com.spotify.spotify.exception.AppException;
 import com.spotify.spotify.exception.ErrorCode;
 import com.spotify.spotify.mapper.SongMapper;
+import com.spotify.spotify.repository.AlbumRepository;
 import com.spotify.spotify.repository.SongRepository;
 import com.spotify.spotify.repository.UserRepository;
 import lombok.AccessLevel;
@@ -32,6 +34,7 @@ import java.util.Map;
 public class SongService {
     UserRepository userRepository;
     SongRepository songRepository;
+    AlbumRepository albumRepository;
     SongMapper songMapper;
     Cloudinary cloudinary;
 
@@ -47,6 +50,9 @@ public class SongService {
 
 //        String coverPath = saveFile(request.getCoverUrl(), "covers");
 //        String audioPath = saveFile(request.getAudioUrl(), "audios");
+        Album album = albumRepository.findById(request.getAlbumId())
+                .orElseThrow(() -> new AppException(ErrorCode.ALBUM_NOT_FOUND));
+        song.setAlbum(album);
 
         String coverPath = saveFileCloud(request.getCoverUrl(), "covers");
         String audioPath = saveFileCloud(request.getAudioUrl(), "audios");
@@ -54,7 +60,7 @@ public class SongService {
         song.setCoverUrl(coverPath);
         song.setAudioUrl(audioPath);
         song.setUploadedBy(user);
-        song.setCreateAt(LocalDateTime.now());
+        song.setCreatedAt(LocalDateTime.now());
 
         song = songRepository.save(song);
         return songMapper.toSongResponse(song);
@@ -66,12 +72,12 @@ public class SongService {
         songMapper.updateSong(song, request);
 
         if(request.getCoverUrl() != null && !request.getCoverUrl().isEmpty()){
-            String coverPath = saveFile(request.getCoverUrl(), "covers");
+            String coverPath = saveFileCloud(request.getCoverUrl(), "covers");
             song.setCoverUrl(coverPath);
         }
 
-        if (request.getAudioUrl() != null && !request.getCoverUrl().isEmpty()){
-            String audioPath = saveFile(request.getAudioUrl(), "audio");
+        if (request.getAudioUrl() != null && !request.getAudioUrl().isEmpty()){
+            String audioPath = saveFileCloud(request.getAudioUrl(), "audios");
             song.setAudioUrl(audioPath);
         }
 

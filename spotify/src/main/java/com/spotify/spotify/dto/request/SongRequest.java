@@ -12,7 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class SongRequest {
     String title;
     String artist;
-    String album;
+    String albumId;
     String genre;//Category
     MultipartFile coverUrl;
     MultipartFile audioUrl;

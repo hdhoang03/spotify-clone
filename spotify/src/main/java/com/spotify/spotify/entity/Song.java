@@ -21,9 +21,9 @@ public class Song {
     String id;
     String title;
     String artist;
-    String album;
+    Album album;
 //    @Column(nullable = true, length = 100)
-    String genre;//Thể loại
+//    String genre;//Thể loại
     String coverUrl;
     String audioUrl;
     @ManyToOne(fetch = FetchType.LAZY)
@@ -34,5 +34,5 @@ public class Song {
     @ManyToOne//Một bài hát thuộc một thể loại
     @JoinColumn(name = "category_id")
     Category category;
-    LocalDateTime createAt;
+    LocalDateTime createdAt;
 }

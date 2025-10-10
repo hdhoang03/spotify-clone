@@ -13,10 +13,11 @@ public class SongResponse {
     String id;
     String title;
     String artist;
-    String album;
+    String albumId;
+    String albumName;
     String genre;//Category
     String coverUrl;
     String audioUrl;
     String uploadedBy;
-    LocalDateTime createAt;
+    LocalDateTime createdAt;
 }
