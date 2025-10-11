@@ -11,5 +11,5 @@ import java.util.Optional;
 public interface ArtistRepository extends JpaRepository<Artist, String> {
     Optional<Artist> findByName(String artist);
     boolean existsByName(String artist);
-    List<Artist> findByNameContaining(String keyword);
+    List<Artist> findByNameContainingIgnoreCase(String keyword);
 }

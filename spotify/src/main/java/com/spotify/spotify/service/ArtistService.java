@@ -12,6 +12,7 @@ import com.spotify.spotify.repository.ArtistRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -39,14 +40,16 @@ public class ArtistService {
         Artist artist = artistMapper.toArtist(request);
 
 //        String avatarPath = saveFile(request.getAvatarUrl());//local
-        String avatarPath = saveFileCloud(request.getAvatarUrl());//Up ảnh lên cloud
-        artist.setAvatarUrl(avatarPath);
+        if (request.getAvatarUrl() != null && !request.getAvatarUrl().isEmpty()) {
+            String avatarPath = saveFileCloud(request.getAvatarUrl());//Up ảnh lên cloud
+            artist.setAvatarUrl(avatarPath);
+        }
         artist = artistRepository.save(artist);
         return artistMapper.toArtistResponse(artist);
     }
 
     public List<ArtistResponse> getAllArtists(){
-        return artistRepository.findAll()
+        return artistRepository.findAll(Sort.by(Sort.Direction.ASC, "name"))
                 .stream()
                 .map(artistMapper::toArtistResponse)
                 .collect(Collectors.toList());
@@ -58,7 +61,7 @@ public class ArtistService {
                 .orElseThrow(() -> new AppException(ErrorCode.ARTIST_NOT_FOUND));
         artistMapper.updateArtist(artist, request);
         if (request.getAvatarUrl() != null && !request.getAvatarUrl().isEmpty()){
-            String avatarPath = saveFile(request.getAvatarUrl());
+            String avatarPath = saveFileCloud(request.getAvatarUrl());
             artist.setAvatarUrl(avatarPath);
         }
         artist = artistRepository.save(artist);
@@ -77,6 +80,13 @@ public class ArtistService {
         Artist artist = artistRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ARTIST_NOT_FOUND));
         return artistMapper.toArtistResponse(artist);
+    }
+
+    public List<ArtistResponse> searchArtists(String keyword){
+        return artistRepository.findByNameContainingIgnoreCase(keyword)
+                .stream()
+                .map(artistMapper::toArtistResponse)
+                .toList();
     }
 
     private String saveFileCloud(MultipartFile file){ //cloudinary

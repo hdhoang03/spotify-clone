@@ -12,4 +12,5 @@ public interface AlbumRepository extends JpaRepository<Album, String> {
     Optional<Album> findByName(String name);
     boolean existsByName(String name);
     List<Album> findByNameContaining(String keyword);
+    List<Album> findByArtists_Id(String artistId);
 }

@@ -2,7 +2,9 @@ package com.spotify.spotify.controller;
 
 import com.spotify.spotify.dto.ApiResponse;
 import com.spotify.spotify.dto.request.ArtistRequest;
+import com.spotify.spotify.dto.response.AlbumResponse;
 import com.spotify.spotify.dto.response.ArtistResponse;
+import com.spotify.spotify.service.AlbumService;
 import com.spotify.spotify.service.ArtistService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,7 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ArtistController {
     ArtistService artistService;
+    AlbumService albumService;
 
     @PostMapping("/create")
     ApiResponse<ArtistResponse> createArtist(@ModelAttribute ArtistRequest request){
@@ -37,6 +40,15 @@ public class ArtistController {
                 .build();
     }
 
+    @GetMapping("/{artistId}/albums")
+    ApiResponse<List<AlbumResponse>> getAlbumsByArtist(@PathVariable String albumId){
+        return ApiResponse.<List<AlbumResponse>>builder()
+                .code(1000)
+                .message("Albums by artist fetched successfully!")
+                .result(albumService.getAlbumsByArtist(albumId))
+                .build();
+    }
+
     @GetMapping("/{id}")
     ApiResponse<ArtistResponse> getArtistById(@PathVariable String id){
         ArtistResponse response = artistService.getArtistById(id);
@@ -44,6 +56,15 @@ public class ArtistController {
                 .code(1000)
                 .message("Artist fetched!")
                 .result(response)
+                .build();
+    }
+
+    @GetMapping("/search")
+    ApiResponse<List<ArtistResponse>> searchArtists(@PathVariable String keyword){
+        return ApiResponse.<List<ArtistResponse>>builder()
+                .code(1000)
+                .message("")
+                .result(artistService.searchArtists(keyword))
                 .build();
     }
 

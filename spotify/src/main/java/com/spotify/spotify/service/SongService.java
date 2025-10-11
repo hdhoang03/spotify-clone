@@ -16,6 +16,7 @@ import com.spotify.spotify.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -85,9 +87,41 @@ public class SongService {
         return songMapper.toSongResponse(song);
     }
 
+    public List<SongResponse> searchSongsByTitle(String keyword){
+        return songRepository.findByTitleContainingIgnoreCase(keyword)
+                .stream()
+                .map(songMapper::toSongResponse)
+                .toList();
+    }
+
+    public List<SongResponse> getAllSongs(){
+        return songRepository.findAll().stream()
+                .map(songMapper::toSongResponse)
+                .toList();
+    }
+
+    public List<SongResponse> getSongsByAlbum(String albumId){
+        return songRepository.findByAlbum_Id(albumId).stream()
+                .map(songMapper::toSongResponse)
+                .toList();
+    }
+
+    public List<SongResponse> getSongByArtist(String artistId){
+        return songRepository.findByArtist_Id(artistId).stream()
+                .map(songMapper::toSongResponse)
+                .toList();
+    }
+
     public SongResponse getSong(String id){
         Song song = songRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.SONG_NOT_FOUND));
         return songMapper.toSongResponse(song);
+    }
+
+    public List<SongResponse> getAllSongsByDay(){
+        return songRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))
+                .stream()
+                .map(songMapper::toSongResponse)
+                .toList();
     }
 
     @PreAuthorize("hasRole('ADMIN')")

@@ -11,7 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class SongRequest {
     String title;
-    String artist;
+    String artistId;
     String albumId;
     String genre;//Category
     MultipartFile coverUrl;

@@ -1,5 +1,6 @@
 package com.spotify.spotify.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -20,7 +21,11 @@ public class Song {
     @GeneratedValue(strategy = GenerationType.UUID)
     String id;
     String title;
-    String artist;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "artist_id")
+    Artist artist;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "album_id")
     Album album;
 //    @Column(nullable = true, length = 100)
 //    String genre;//Thể loại
@@ -31,6 +36,7 @@ public class Song {
     User uploadedBy;
 //    @ManyToMany(mappedBy = "songs") //một bài hát thuộc nhiều thể loại
 //    Set<Category> categories = new HashSet<>();
+    @JsonBackReference
     @ManyToOne//Một bài hát thuộc một thể loại
     @JoinColumn(name = "category_id")
     Category category;

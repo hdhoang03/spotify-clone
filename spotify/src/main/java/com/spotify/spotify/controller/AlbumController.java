@@ -3,6 +3,7 @@ package com.spotify.spotify.controller;
 import com.spotify.spotify.dto.ApiResponse;
 import com.spotify.spotify.dto.request.AlbumRequest;
 import com.spotify.spotify.dto.response.AlbumResponse;
+import com.spotify.spotify.dto.response.SongResponse;
 import com.spotify.spotify.service.AlbumService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -19,12 +20,30 @@ public class AlbumController {
     AlbumService albumService;
 
     @PostMapping("/create")
-    ApiResponse<AlbumResponse> createAlbum(AlbumRequest request){
+    ApiResponse<AlbumResponse> createAlbum(@ModelAttribute AlbumRequest request){
         AlbumResponse response = albumService.createAlbum(request);
         return ApiResponse.<AlbumResponse>builder()
                 .code(1000)
                 .message("Album has been created!")
                 .result(response)
+                .build();
+    }
+
+    @GetMapping("/all")
+    ApiResponse<List<AlbumResponse>> getAllAlbum(){
+        return ApiResponse.<List<AlbumResponse>>builder()
+                .code(1000)
+                .message("All albums fetched!")
+                .result(albumService.getAllAlbum())
+                .build();
+    }
+
+    @GetMapping("/{albumId}/songs")
+    ApiResponse<List<SongResponse>> getSongsFromAlbum(@PathVariable String albumId){
+        return ApiResponse.<List<SongResponse>>builder()
+                .code(1000)
+                .message("All songs from album have been fetched successfully!")
+                .result(albumService.getAllSongsFromAlbum(albumId))
                 .build();
     }
 
@@ -39,7 +58,7 @@ public class AlbumController {
     }
 
     @PutMapping("/update/{id}")
-    ApiResponse<AlbumResponse> updateAlbum(@PathVariable String id, AlbumRequest request){
+    ApiResponse<AlbumResponse> updateAlbum(@PathVariable String id, @ModelAttribute AlbumRequest request){
         AlbumResponse response = albumService.updateAlbum(id, request);
         return ApiResponse.<AlbumResponse>builder()
                 .code(1000)
@@ -58,7 +77,7 @@ public class AlbumController {
     }
 
     @GetMapping("/search")
-    ApiResponse<List<AlbumResponse>> searchAlbum(@RequestBody String keyword){
+    ApiResponse<List<AlbumResponse>> searchAlbum(@RequestParam String keyword){
         return ApiResponse.<List<AlbumResponse>>builder()
                 .code(1000)
                 .message("Result")

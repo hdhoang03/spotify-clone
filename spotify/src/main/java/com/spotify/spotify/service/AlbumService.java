@@ -4,11 +4,14 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.spotify.spotify.dto.request.AlbumRequest;
 import com.spotify.spotify.dto.response.AlbumResponse;
+import com.spotify.spotify.dto.response.SongResponse;
 import com.spotify.spotify.entity.Album;
 import com.spotify.spotify.entity.Artist;
+import com.spotify.spotify.entity.Song;
 import com.spotify.spotify.exception.AppException;
 import com.spotify.spotify.exception.ErrorCode;
 import com.spotify.spotify.mapper.AlbumMapper;
+import com.spotify.spotify.mapper.SongMapper;
 import com.spotify.spotify.repository.AlbumRepository;
 import com.spotify.spotify.repository.ArtistRepository;
 import lombok.AccessLevel;
@@ -16,12 +19,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,6 +40,7 @@ public class AlbumService {
     ArtistRepository artistRepository;
     AlbumMapper albumMapper;
     Cloudinary cloudinary;
+    SongMapper songMapper;
 
     private static final String UPLOAD_DIR = "uploads/albums/";
 
@@ -55,6 +61,37 @@ public class AlbumService {
         album.setArtists(Set.of(artist));
         album = albumRepository.save(album);
         return albumMapper.toAlbumResponse(album);
+    }
+
+    public List<SongResponse> getAllSongsFromAlbum(String albumId){
+        Album album = albumRepository.findById(albumId)
+                .orElseThrow(() -> new AppException(ErrorCode.ALBUM_NOT_FOUND));
+
+        Set<Song> songs = album.getSongs();
+        if(songs == null || songs.isEmpty()) return Collections.emptyList();
+
+        return songs.stream()
+                .map(songMapper::toSongResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<AlbumResponse> getAlbumsByArtist(String artistId){
+        Artist artist = artistRepository.findById(artistId)
+                .orElseThrow(() -> new AppException(ErrorCode.ALBUM_NOT_FOUND));
+
+        List<Album> albums = albumRepository.findByArtists_Id(artistId);
+
+        if(albums.isEmpty()) return Collections.emptyList();
+
+        return albums.stream()
+                .map(albumMapper::toAlbumResponse)
+                .collect(Collectors.toList());
+    }
+
+    public List<AlbumResponse> getAllAlbum(){
+        return albumRepository.findAll().stream()
+                .map(albumMapper::toAlbumResponse)
+                .toList();
     }
 
     public AlbumResponse getAlbumById(String id){

@@ -30,11 +30,11 @@ public class SecurityConfig {
     @Autowired
     private UserRepository userRepository;
 
-    private final String[] PUBLIC_ENDPOINTS = {"/user/**", "/user", "/auth/**", "/song/**",
+    private final String[] PUBLIC_ENDPOINTS = {"/user/**", "/user", "/auth/**",
             "/categories","/categories/**", "/categories/search",
-            "/albums", "/albums/**",
+            "/albums", "/albums/**", "/albums/all",
             "/artist", "/artist/**",
-
+            "/song/**", "/song/allSongs", "/song/search"
     };
 
     @Bean

@@ -25,6 +25,6 @@ public class Category {
     CategoryType type;
     String coverUrl;
     Boolean active;
-    @ManyToMany
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = false)
     Set<Song> songs = new HashSet<>();
 }

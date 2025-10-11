@@ -51,6 +51,7 @@ public class CategoryService {
 //        categoryRepository.save(category);
 
         song.setCategory(category);
+        category.getSongs().add(song);
         songRepository.save(song);
 
         return categoryMapper.toCategoryResponse(category);
