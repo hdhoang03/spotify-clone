@@ -19,7 +19,7 @@ public class CategoryController {
     CategoryService categoryService;
 
     @PostMapping("/create")
-    ApiResponse<CategoryResponse> createCategory(@RequestBody CategoryRequest request){
+    ApiResponse<CategoryResponse> createCategory(@ModelAttribute CategoryRequest request){
         CategoryResponse response = categoryService.createCategory(request);
         return ApiResponse.<CategoryResponse>builder()
                 .code(1000)
@@ -49,7 +49,7 @@ public class CategoryController {
     }
 
     @PutMapping("/update/{id}")
-    ApiResponse<CategoryResponse> updateCategory(@PathVariable String id, @RequestBody CategoryRequest request){
+    ApiResponse<CategoryResponse> updateCategory(@PathVariable String id, @ModelAttribute CategoryRequest request){
         CategoryResponse response = categoryService.updateCategory(id, request);
         return ApiResponse.<CategoryResponse>builder()
                 .code(1000)

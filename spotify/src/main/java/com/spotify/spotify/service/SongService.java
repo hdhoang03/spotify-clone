@@ -4,15 +4,11 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.spotify.spotify.dto.request.SongRequest;
 import com.spotify.spotify.dto.response.SongResponse;
-import com.spotify.spotify.entity.Album;
-import com.spotify.spotify.entity.Song;
-import com.spotify.spotify.entity.User;
+import com.spotify.spotify.entity.*;
 import com.spotify.spotify.exception.AppException;
 import com.spotify.spotify.exception.ErrorCode;
 import com.spotify.spotify.mapper.SongMapper;
-import com.spotify.spotify.repository.AlbumRepository;
-import com.spotify.spotify.repository.SongRepository;
-import com.spotify.spotify.repository.UserRepository;
+import com.spotify.spotify.repository.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -37,6 +33,8 @@ public class SongService {
     UserRepository userRepository;
     SongRepository songRepository;
     AlbumRepository albumRepository;
+    ArtistRepository artistRepository;
+    CategoryRepository categoryRepository;
     SongMapper songMapper;
     Cloudinary cloudinary;
 
@@ -47,18 +45,20 @@ public class SongService {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-
+        Artist artist = artistRepository.findById(request.getArtistId())
+                .orElseThrow(() -> new AppException(ErrorCode.ARTIST_NOT_FOUND));
         Song song = songMapper.toSong(request);
+        Album album = albumRepository.findById(request.getAlbumId())
+                .orElseThrow(() -> new AppException(ErrorCode.ALBUM_NOT_FOUND));
 
 //        String coverPath = saveFile(request.getCoverUrl(), "covers");
 //        String audioPath = saveFile(request.getAudioUrl(), "audios");
-        Album album = albumRepository.findById(request.getAlbumId())
-                .orElseThrow(() -> new AppException(ErrorCode.ALBUM_NOT_FOUND));
-        song.setAlbum(album);
-
         String coverPath = saveFileCloud(request.getCoverUrl(), "covers");
         String audioPath = saveFileCloud(request.getAudioUrl(), "audios");
 
+        //set thủ công vì trong mapping ignore
+        song.setAlbum(album);
+        song.setArtist(artist);
         song.setCoverUrl(coverPath);
         song.setAudioUrl(audioPath);
         song.setUploadedBy(user);
@@ -70,8 +70,27 @@ public class SongService {
 
     @PreAuthorize("hasRole('ADMIN')")
     public SongResponse updateSong(String id, SongRequest request){
-        Song song = songRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.SONG_NOT_FOUND));
+        Song song = songRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.SONG_NOT_FOUND));
         songMapper.updateSong(song, request);
+
+        if(request.getArtistId() != null && !request.getArtistId().isEmpty()){
+            Artist artist = artistRepository.findById(request.getArtistId())
+                    .orElseThrow(() -> new AppException(ErrorCode.ARTIST_NOT_FOUND));
+            song.setArtist(artist);
+        }
+
+        if(request.getAlbumId() != null && !request.getAlbumId().isEmpty()){
+            Album album = albumRepository.findById(request.getAlbumId())
+                    .orElseThrow(() -> new AppException(ErrorCode.ALBUM_NOT_FOUND));
+            song.setAlbum(album);
+        }
+
+        if(request.getGenre() != null && !request.getGenre().isEmpty()){
+            Category category = categoryRepository.findById(request.getGenre())
+                    .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
+            song.setCategory(category);
+        }
 
         if(request.getCoverUrl() != null && !request.getCoverUrl().isEmpty()){
             String coverPath = saveFileCloud(request.getCoverUrl(), "covers");

@@ -16,6 +16,7 @@ public enum ErrorCode {
     USER_BANNED_FROM_COMMENTING(0002, "User is banned from commenting", HttpStatus.NOT_FOUND),
     UNAUTHENTICATED(1003, "Unauthenticated", HttpStatus.UNAUTHORIZED),
     USER_NOT_EXISTED(1004, "User not existed", HttpStatus.NOT_FOUND),
+    USER_ALREADY_EXIST(10014, "User existed", HttpStatus.BAD_REQUEST),
     ACCOUNT_DISABLED(1005, "Account has been disabled", HttpStatus.NOT_ACCEPTABLE),
     EMAIL_EXISTED(1006, "Email existed", HttpStatus.BAD_REQUEST),
     FILE_UPLOAD_FAILED(1007, "File upload filed", HttpStatus.BAD_REQUEST),

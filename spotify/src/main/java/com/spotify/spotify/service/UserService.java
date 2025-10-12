@@ -35,7 +35,7 @@ public class UserService {
 
     public UserResponse createUser(UserCreationRequest request){
         if (userRepository.existsByUsername(request.getUsername())){
-            throw new AppException(ErrorCode.USER_NOT_EXISTED);
+            throw new AppException(ErrorCode.USER_ALREADY_EXIST);
         }
 
         User user = userMapper.toUser(request);
