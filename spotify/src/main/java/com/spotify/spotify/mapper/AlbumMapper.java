@@ -11,8 +11,11 @@ import org.mapstruct.MappingTarget;
 public interface AlbumMapper {
     @Mapping(target = "albumUrl", ignore = true)
     Album toAlbum(AlbumRequest request);
+
     @Mapping(source = "albumUrl", target = "avatarUrl")
+//    @Mapping(target = "songs", source = "songs")
     AlbumResponse toAlbumResponse(Album album);
+
     @Mapping(target = "albumUrl", ignore = true)
     void updateAlbum(@MappingTarget Album album, AlbumRequest request);
 }

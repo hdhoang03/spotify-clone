@@ -5,8 +5,7 @@ import com.spotify.spotify.dto.response.AlbumResponse;
 import com.spotify.spotify.dto.response.SongResponse;
 import com.spotify.spotify.entity.Album;
 import com.spotify.spotify.entity.Song;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import javax.annotation.processing.Generated;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +13,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-10-12T09:57:33+0700",
+    date = "2025-10-19T09:42:18+0700",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.5 (Oracle Corporation)"
 )
 @Component
@@ -49,7 +48,7 @@ public class AlbumMapperImpl implements AlbumMapper {
         albumResponse.id( album.getId() );
         albumResponse.name( album.getName() );
         albumResponse.description( album.getDescription() );
-        albumResponse.songs( songSetToSongResponseList( album.getSongs() ) );
+        albumResponse.songs( songSetToSongResponseSet( album.getSongs() ) );
 
         return albumResponse.build();
     }
@@ -64,16 +63,16 @@ public class AlbumMapperImpl implements AlbumMapper {
         album.setDescription( request.getDescription() );
     }
 
-    protected List<SongResponse> songSetToSongResponseList(Set<Song> set) {
+    protected Set<SongResponse> songSetToSongResponseSet(Set<Song> set) {
         if ( set == null ) {
             return null;
         }
 
-        List<SongResponse> list = new ArrayList<SongResponse>( set.size() );
+        Set<SongResponse> set1 = new LinkedHashSet<SongResponse>( Math.max( (int) ( set.size() / .75f ) + 1, 16 ) );
         for ( Song song : set ) {
-            list.add( songMapper.toSongResponse( song ) );
+            set1.add( songMapper.toSongResponse( song ) );
         }
 
-        return list;
+        return set1;
     }
 }

@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,10 +27,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -88,6 +86,7 @@ public class AlbumService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<AlbumResponse> getAllAlbum(){
         return albumRepository.findAll().stream()
                 .map(albumMapper::toAlbumResponse)
@@ -114,7 +113,7 @@ public class AlbumService {
         if (request.getArtistId() != null){
             Artist artist = artistRepository.findById(request.getArtistId())
                     .orElseThrow(() -> new AppException(ErrorCode.ARTIST_NOT_FOUND));
-            album.setArtists(Set.of(artist));
+            album.setArtists(new HashSet<>(Set.of(artist)));
         }
         album = albumRepository.save(album);
         return albumMapper.toAlbumResponse(album);

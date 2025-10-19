@@ -38,7 +38,7 @@ public class AlbumController {
                 .build();
     }
 
-    @GetMapping("/{albumId}/songs")
+    @GetMapping("/{albumId}/songs") //Lỗi @Data trong entity nên dùng @Getter & @Setter
     ApiResponse<List<SongResponse>> getSongsFromAlbum(@PathVariable String albumId){
         return ApiResponse.<List<SongResponse>>builder()
                 .code(1000)
@@ -57,7 +57,7 @@ public class AlbumController {
                 .build();
     }
 
-    @PutMapping("/update/{id}")
+    @PutMapping("/update/{id}")//Lỗi set.of vì bất biến, chỉ dùng cho create
     ApiResponse<AlbumResponse> updateAlbum(@PathVariable String id, @ModelAttribute AlbumRequest request){
         AlbumResponse response = albumService.updateAlbum(id, request);
         return ApiResponse.<AlbumResponse>builder()
@@ -67,7 +67,7 @@ public class AlbumController {
                 .build();
     }
 
-    @DeleteMapping("/delete/{id}")
+    @DeleteMapping("/delete/{id}") //Lỗi -- tạo 1 album mới để test sau
     ApiResponse<Void> deleteAlbum(@PathVariable String id){
         albumService.deleteAlbum(id);
         return ApiResponse.<Void>builder()

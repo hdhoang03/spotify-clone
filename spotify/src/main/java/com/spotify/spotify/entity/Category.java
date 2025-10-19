@@ -1,5 +1,6 @@
 package com.spotify.spotify.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.spotify.spotify.constaint.CategoryType;
 import jakarta.persistence.*;
 import lombok.*;
@@ -9,7 +10,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Data
+//@Data
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
@@ -26,5 +29,6 @@ public class Category {
     String coverUrl;
     Boolean active;
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = false)
+    @JsonManagedReference
     Set<Song> songs = new HashSet<>();
 }

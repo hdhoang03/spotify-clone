@@ -11,6 +11,7 @@ import org.mapstruct.MappingTarget;
 public interface CategoryMapper {
     @Mapping(target = "coverUrl", ignore = true)
     Category toCategory(CategoryRequest request);
+    @Mapping(target = "songs", ignore = true)
     CategoryResponse toCategoryResponse(Category category);
     @Mapping(target = "coverUrl", ignore = true)
     void updateCategory(@MappingTarget Category category, CategoryRequest request);

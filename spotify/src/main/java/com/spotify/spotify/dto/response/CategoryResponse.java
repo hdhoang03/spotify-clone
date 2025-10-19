@@ -11,6 +11,7 @@ import java.util.List;
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CategoryResponse {
+    String id;
     String name;
     String coverUrl;
     String description;

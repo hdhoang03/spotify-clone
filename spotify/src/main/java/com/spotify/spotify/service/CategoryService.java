@@ -11,6 +11,7 @@ import com.spotify.spotify.exception.ErrorCode;
 import com.spotify.spotify.mapper.CategoryMapper;
 import com.spotify.spotify.repository.CategoryRepository;
 import com.spotify.spotify.repository.SongRepository;
+import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -47,6 +48,7 @@ public class CategoryService {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
+    @Transactional //Rollback khi gặp lỗi
     public CategoryResponse addSongToCategory(String categoryId, String songId){
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
@@ -54,11 +56,7 @@ public class CategoryService {
         Song song = songRepository.findById(songId)
                 .orElseThrow(() -> new AppException(ErrorCode.SONG_NOT_FOUND));
 
-//        category.getSongs().add(song);
-//        categoryRepository.save(category);
-
         song.setCategory(category);
-        category.getSongs().add(song);
         songRepository.save(song);
 
         return categoryMapper.toCategoryResponse(category);

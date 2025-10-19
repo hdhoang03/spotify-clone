@@ -11,7 +11,9 @@ import java.util.Set;
 
 @Entity
 @Table(name = "songs")
-@Data
+//@Data
+@Getter
+@Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
@@ -26,6 +28,7 @@ public class Song {
     Artist artist;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "album_id")
+    @JsonBackReference
     Album album;
 //    @Column(nullable = true, length = 100)
 //    String genre;//Thể loại

@@ -2,7 +2,7 @@ package com.spotify.spotify.dto.response;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import java.util.List;
+import java.util.Set;
 
 @Data
 @Builder
@@ -14,5 +14,5 @@ public class AlbumResponse {
     String name;
     String description;
     String avatarUrl;//có gì sửa sau
-    List<SongResponse> songs;
+    Set<SongResponse> songs;
 }

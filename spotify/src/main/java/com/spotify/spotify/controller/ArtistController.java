@@ -40,12 +40,12 @@ public class ArtistController {
                 .build();
     }
 
-    @GetMapping("/{artistId}/albums")
-    ApiResponse<List<AlbumResponse>> getAlbumsByArtist(@PathVariable String albumId){
+    @GetMapping("/{artistId}/albums")//Do sai tên biến @PathVariable là albumId
+    ApiResponse<List<AlbumResponse>> getAlbumsByArtist(@PathVariable String artistId){
         return ApiResponse.<List<AlbumResponse>>builder()
                 .code(1000)
                 .message("Albums by artist fetched successfully!")
-                .result(albumService.getAlbumsByArtist(albumId))
+                .result(albumService.getAlbumsByArtist(artistId))
                 .build();
     }
 
@@ -60,7 +60,7 @@ public class ArtistController {
     }
 
     @GetMapping("/search")
-    ApiResponse<List<ArtistResponse>> searchArtists(@PathVariable String keyword){
+    ApiResponse<List<ArtistResponse>> searchArtists(@RequestParam String keyword){
         return ApiResponse.<List<ArtistResponse>>builder()
                 .code(1000)
                 .message("")
