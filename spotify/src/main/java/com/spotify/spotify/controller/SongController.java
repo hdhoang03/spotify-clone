@@ -66,7 +66,7 @@ public class SongController {
                 .build();
     }
 
-    @GetMapping("/{albumId}")
+    @GetMapping("/album/{albumId}")
     ApiResponse<List<SongResponse>> getSongsByAlbum(@PathVariable String albumId){
         return ApiResponse.<List<SongResponse>>builder()
                 .code(1000)
@@ -75,7 +75,7 @@ public class SongController {
                 .build();
     }
 
-    @GetMapping("/{artistId}")
+    @GetMapping("/artist/{artistId}")
     ApiResponse<List<SongResponse>> getSongsByArtist(@PathVariable String artistId){
         return ApiResponse.<List<SongResponse>>builder()
                 .code(1000)
@@ -94,7 +94,7 @@ public class SongController {
     }
 
     @GetMapping("/search")
-    ApiResponse<List<SongResponse>> searchSongsByTitle(@PathVariable String keyword){
+    ApiResponse<List<SongResponse>> searchSongsByTitle(@RequestParam String keyword){
         return ApiResponse.<List<SongResponse>>builder()
                 .code(1000)
                 .message("Songs...")
@@ -102,7 +102,7 @@ public class SongController {
                 .build();
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/delete/{id}")
     ApiResponse<Void> deleteSong(@PathVariable String id){
         songService.deleteSong(id);
         return ApiResponse.<Void>builder()

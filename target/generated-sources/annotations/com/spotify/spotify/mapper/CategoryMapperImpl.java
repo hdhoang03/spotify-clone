@@ -2,17 +2,26 @@ package com.spotify.spotify.mapper;
 
 import com.spotify.spotify.dto.request.CategoryRequest;
 import com.spotify.spotify.dto.response.CategoryResponse;
+import com.spotify.spotify.dto.response.SongResponse;
 import com.spotify.spotify.entity.Category;
+import com.spotify.spotify.entity.Song;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import javax.annotation.processing.Generated;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-10-19T09:42:18+0700",
+    date = "2025-10-23T09:59:14+0700",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.5 (Oracle Corporation)"
 )
 @Component
 public class CategoryMapperImpl implements CategoryMapper {
+
+    @Autowired
+    private SongMapper songMapper;
 
     @Override
     public Category toCategory(CategoryRequest request) {
@@ -40,6 +49,7 @@ public class CategoryMapperImpl implements CategoryMapper {
         categoryResponse.name( category.getName() );
         categoryResponse.coverUrl( category.getCoverUrl() );
         categoryResponse.description( category.getDescription() );
+        categoryResponse.songs( songSetToSongResponseList( category.getSongs() ) );
 
         return categoryResponse.build();
     }
@@ -52,5 +62,18 @@ public class CategoryMapperImpl implements CategoryMapper {
 
         category.setName( request.getName() );
         category.setDescription( request.getDescription() );
+    }
+
+    protected List<SongResponse> songSetToSongResponseList(Set<Song> set) {
+        if ( set == null ) {
+            return null;
+        }
+
+        List<SongResponse> list = new ArrayList<SongResponse>( set.size() );
+        for ( Song song : set ) {
+            list.add( songMapper.toSongResponse( song ) );
+        }
+
+        return list;
     }
 }
