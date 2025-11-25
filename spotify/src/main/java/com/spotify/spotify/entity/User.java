@@ -5,10 +5,12 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Data
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
@@ -29,6 +31,14 @@ public class User {
     Set<Role> roles;
     @ManyToMany
     Set<Permission> permissions;
+
+    String avatarUrl;
+    String bio;
+    LocalDate createAt;
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    Set<Playlist> playlists = new HashSet<>();
 //    @OneToMany(mappedBy = "uploadedBy") //Danh sách bài hát mà user đã tải lên
 //    Set<Song> songs;
+
+    Boolean isPublicProfile = true;
 }

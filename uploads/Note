@@ -1,0 +1,28 @@
+1. Hỗ trợ endpoint tìm kiếm nâng cao nhiều tiêu chí
+Ví dụ /songs/search?keyword=love&artist=adele&category=pop&year=2024
+
+2. Validate dữ liệu input
+Dùng @Valid + @NotBlank, @Size, @Pattern
+Ví dụ
+public class AlbumRequest {
+    ***@NotBlank(message = "Album name cannot be empty")***
+    \*\*\*String name;\*\*\*
+}
+3.	Thêm bình luận / đánh giá (không bắt buộc)
+4.	Thêm lượt nghe & trending
+Thêm field playCount Khi user chọn nghe bài hát sẽ tăng lượt stream lên để hiển thị top bài hát hot trong tuần / tháng
+-> Khi click nghe gọi endpoint ví dụ như /song/{id}/play
+5.	Thêm lượt thích (like) và lưu (bookmark) bằng cách tạo bảng user_song_favotite để người dùng lưu bài hát cá nhân họ thích, xem bài hát đã thích Like songs
+6.	Gợi ý bài hát (recommendation)
+-> Gợi ý theo cùng ca sĩ, thể loại hoặc danh mục
+Ví dụ GET /song/{id}/recommendations
+
+7. Thêm xóa file ở Cloudinary tránh file rác
+8.	Tạo Swagger UI để test APIs
+----------- ĐÃ THÊM
+27/10
+1. Thêm 3 apis
+- Đặt tài khoản ở public/private
+- Xem danh sách người đang theo dõi của bản thân
+- Xem danh sách người đang theo dõi của người khác
+

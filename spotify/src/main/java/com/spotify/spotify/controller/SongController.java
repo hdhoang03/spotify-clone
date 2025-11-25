@@ -110,4 +110,13 @@ public class SongController {
                 .message("Song has been deleted!")
                 .build();
     }
+
+    @GetMapping("/advanced-search")
+    ApiResponse<List<SongResponse>> multipleSearch(@RequestParam(required = false) String keyword, @RequestParam(required = false) String artist, @RequestParam(required = false) String category, @RequestParam(required = false) Integer year){
+        return ApiResponse.<List<SongResponse>>builder()
+                .code(1000)
+                .message("Search results")
+                .result(songService.searchSongs(keyword, artist, category, year))
+                .build();
+    }
 }

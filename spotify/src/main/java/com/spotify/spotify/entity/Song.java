@@ -11,7 +11,6 @@ import java.util.Set;
 
 @Entity
 @Table(name = "songs")
-//@Data
 @Getter
 @Setter
 @Builder
@@ -44,4 +43,20 @@ public class Song {
     @JoinColumn(name = "category_id")
     Category category;
     LocalDateTime createdAt;
+    LocalDateTime updatedAt;
+
+    //25/10
+    Long playCount = 0L;
+    Long likeCount = 0L;
+    Double duration;
+
+    @PrePersist
+    void onCreate(){
+        this.createdAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    void onUpdate(){
+        this.updatedAt = LocalDateTime.now();
+    }
 }

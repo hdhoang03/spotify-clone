@@ -1,13 +1,18 @@
 package com.spotify.spotify.controller;
 
+import com.cloudinary.Api;
 import com.spotify.spotify.dto.ApiResponse;
 import com.spotify.spotify.dto.request.UserCreationRequest;
 import com.spotify.spotify.dto.request.UserUpdateRequest;
+import com.spotify.spotify.dto.response.ArtistResponse;
 import com.spotify.spotify.dto.response.UserResponse;
+import com.spotify.spotify.entity.ArtistFollow;
+import com.spotify.spotify.service.ArtistFollowService;
 import com.spotify.spotify.service.UserService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,6 +23,7 @@ import java.util.List;
 @RequestMapping("/user")
 public class UserController {
     UserService userService;
+    ArtistFollowService artistFollowService;
 
     @PostMapping("/create")
     ApiResponse<UserResponse> createUser(@RequestBody UserCreationRequest request){
@@ -53,4 +59,33 @@ public class UserController {
                 .result(userService.updateUser(request, id))
                 .build();
     }
+
+    @PutMapping("/profile/privacy")
+    ApiResponse<UserResponse> togglePrivacy(@RequestParam boolean isPublic){
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return ApiResponse.<UserResponse>builder()
+                .code(1000)
+                .message(isPublic ? "Profile set to public." : "Profile set to private.")
+                .result(userService.togglePrivacy(username, isPublic))
+                .build();
+    }
+
+    @GetMapping("/artist/me")
+    ApiResponse<List<ArtistResponse>> getMyFollowedArtists(){
+        return ApiResponse.<List<ArtistResponse>>builder()
+                .code(1000)
+                .message("My favorite artists")
+                .result(artistFollowService.getMyFollowedArtists())
+                .build();
+    }
+
+    @GetMapping("/follow/{userId}/artist")
+    ApiResponse<List<ArtistResponse>> getFollowedArtists(@PathVariable String userId){
+        return ApiResponse.<List<ArtistResponse>>builder()
+                .code(1000)
+                .message("Get followed artists successfully.")
+                .result(artistFollowService.getFollowedArtists(userId))
+                .build();
+    }
+
 }

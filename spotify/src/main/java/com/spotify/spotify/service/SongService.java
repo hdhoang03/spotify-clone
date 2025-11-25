@@ -13,6 +13,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -183,5 +184,34 @@ public class SongService {
         } catch (IOException e){
             throw new AppException(ErrorCode.FILE_UPLOAD_FAILED);
         }
+    }
+
+    public List<SongResponse> searchSongs(String keyword, String artist, String category, Integer year){
+        Specification<Song> spec = Specification.allOf();
+
+        if (keyword != null && !keyword.isEmpty()){
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.like(criteriaBuilder.lower(root.get("title")), "%" + keyword.toLowerCase() + "%"));
+        }
+
+        if (artist != null && !artist.isEmpty()){
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.like(criteriaBuilder.lower(root.join("artist").get("name")), "%" + artist.toLowerCase() + "%"));
+        }
+
+        if (category != null && !category.isEmpty()){
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.like(criteriaBuilder.lower(root.join("category").get("name")), "%" + category.toLowerCase() + "%"));
+        }
+
+        if (year != null){
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(criteriaBuilder.function("YEAR", Integer.class, root.get("releaseDate")), year));
+        }
+
+        return songRepository.findAll(spec)
+                .stream()
+                .map(songMapper::toSongResponse)
+                .toList();
     }
 }

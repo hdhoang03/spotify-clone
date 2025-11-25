@@ -3,7 +3,9 @@ package com.spotify.spotify.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.springframework.cglib.core.Local;
 
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -21,6 +23,11 @@ public class Artist {
     String description;
     String name;
     String avatarUrl;
+    //25/10
+    String country;
+    String followerCount;
+    LocalDate debutDate;
+
     @OneToMany(mappedBy = "artist", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     Set<Song> songs = new HashSet<>();
 }

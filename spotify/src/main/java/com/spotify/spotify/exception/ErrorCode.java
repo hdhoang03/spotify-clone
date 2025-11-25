@@ -26,6 +26,8 @@ public enum ErrorCode {
     CATEGORY_NOT_FOUND(1011, "Category not found", HttpStatus.NOT_FOUND),
     ALBUM_ALREADY_EXISTS(1012, "Album already exists", HttpStatus.NOT_FOUND),
     ALBUM_NOT_FOUND(1013, "Album not found", HttpStatus.NOT_FOUND),
+    USER_PROFILE_PRIVATE(1014, "User profile's is private", HttpStatus.NOT_FOUND),
+    PLAY_LIST_NOT_FOUND(1015, "Playlist not found", HttpStatus.NOT_FOUND),
 
     ;
     int code;

@@ -30,4 +30,6 @@ public class Category {
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = false)
     @JsonManagedReference
     Set<Song> songs = new HashSet<>();
+
+    Integer displayOrder; //Thứ tự hiển thị 25/10
 }

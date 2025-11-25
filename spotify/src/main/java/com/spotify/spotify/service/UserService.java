@@ -4,11 +4,13 @@ import com.spotify.spotify.constaint.PredefinedRole;
 import com.spotify.spotify.dto.request.UserCreationRequest;
 import com.spotify.spotify.dto.request.UserUpdateRequest;
 import com.spotify.spotify.dto.response.UserResponse;
+import com.spotify.spotify.entity.ArtistFollow;
 import com.spotify.spotify.entity.Role;
 import com.spotify.spotify.entity.User;
 import com.spotify.spotify.exception.AppException;
 import com.spotify.spotify.exception.ErrorCode;
 import com.spotify.spotify.mapper.UserMapper;
+import com.spotify.spotify.repository.ArtistFollowRepository;
 import com.spotify.spotify.repository.RoleRepository;
 import com.spotify.spotify.repository.UserRepository;
 import lombok.AccessLevel;
@@ -17,6 +19,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -44,6 +47,7 @@ public class UserService {
         roleRepository.findById(PredefinedRole.USER_ROLE).ifPresent(roles::add);
         user.setRoles(roles);
         user.setEnabled(true);
+        user.setIsPublicProfile(true);
 
         try {
             user = userRepository.save(user);
@@ -84,5 +88,14 @@ public class UserService {
                 .stream() //thay cho for
                 .map(userMapper::toUserResponse)
                 .toList();
+    }
+
+    public UserResponse togglePrivacy(String username, boolean isPublic){ //27/10
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        user.setIsPublicProfile(isPublic);
+        userRepository.save(user);
+        return userMapper.toUserResponse(user);
     }
 }
