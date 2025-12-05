@@ -34,7 +34,8 @@ public class SecurityConfig {
             "/categories","/categories/**", "/categories/search",
             "/albums", "/albums/**", "/albums/all",
             "/artist", "/artist/**",
-            "/song/**", "/song/allSongs", "/song/search", "/advanced-search"
+            "/song/**", "/song/allSongs", "/song/search", "/advanced-search",
+            "/stream/count/**",
     };
 
     @Bean

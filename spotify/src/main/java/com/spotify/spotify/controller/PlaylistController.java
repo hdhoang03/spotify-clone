@@ -35,7 +35,7 @@ public class PlaylistController {
                 .build();
     }
 
-    @PutMapping("/update")
+    @PutMapping("/update/{playlistId}")
     ApiResponse<PlaylistResponse> updatePlaylist(@ModelAttribute PlaylistUpdateRequest request, @PathVariable String playlistId){
         return ApiResponse.<PlaylistResponse>builder()
                 .code(1000)
@@ -44,7 +44,7 @@ public class PlaylistController {
                 .build();
     }
 
-    @DeleteMapping("/delete")
+    @DeleteMapping("/delete/{playlistId}")
     ApiResponse<Void> deletePlaylist(@PathVariable String playlistId){
         playlistService.deletePlaylist(playlistId);
         return ApiResponse.<Void>builder()

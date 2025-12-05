@@ -28,6 +28,7 @@ public enum ErrorCode {
     ALBUM_NOT_FOUND(1013, "Album not found", HttpStatus.NOT_FOUND),
     USER_PROFILE_PRIVATE(1014, "User profile's is private", HttpStatus.NOT_FOUND),
     PLAY_LIST_NOT_FOUND(1015, "Playlist not found", HttpStatus.NOT_FOUND),
+    STREAM_TOO_SHORT(1016, "Stream too short to create", HttpStatus.BAD_REQUEST),
 
     ;
     int code;

@@ -1,12 +1,10 @@
 package com.spotify.spotify.controller;
 
-import com.cloudinary.Api;
 import com.spotify.spotify.dto.ApiResponse;
 import com.spotify.spotify.dto.request.UserCreationRequest;
 import com.spotify.spotify.dto.request.UserUpdateRequest;
 import com.spotify.spotify.dto.response.ArtistResponse;
 import com.spotify.spotify.dto.response.UserResponse;
-import com.spotify.spotify.entity.ArtistFollow;
 import com.spotify.spotify.service.ArtistFollowService;
 import com.spotify.spotify.service.UserService;
 import lombok.AccessLevel;

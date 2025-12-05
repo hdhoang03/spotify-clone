@@ -35,7 +35,7 @@ public class Playlist {// Cho user tạo playlist thêm/xóa bài, chia sẻ bà
             inverseJoinColumns = @JoinColumn(name = "song_id"))
     Set<Song> songs = new HashSet<>();
 
-    @Column(name = "create_at")//sai tên cột nên phải định nghĩa lại mới mapping được
+    @Column(name = "create_at")//sai tên cột nên phải định nghĩa lại mới mapping được, còn không thì drop hoặc sửa tên bảng trong db
     LocalDateTime createdAt;
     @PrePersist//Cập nhật thời gian tự động
     void onCreate(){
