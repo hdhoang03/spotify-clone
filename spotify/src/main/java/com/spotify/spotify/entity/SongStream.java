@@ -5,6 +5,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -29,5 +30,5 @@ public class SongStream {
     Long duration; //Thời gian nghe, ví dụ 36s trở lên là 1 lần
 
     @Column(nullable = false)
-    LocalDate createdAt;
+    LocalDateTime createdAt;
 }

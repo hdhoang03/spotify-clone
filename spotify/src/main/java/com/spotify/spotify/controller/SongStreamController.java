@@ -3,6 +3,7 @@ package com.spotify.spotify.controller;
 import com.spotify.spotify.dto.ApiResponse;
 import com.spotify.spotify.dto.request.SongStreamRequest;
 import com.spotify.spotify.dto.response.SongStreamResponse;
+import com.spotify.spotify.dto.response.StreamStatResponse;
 import com.spotify.spotify.dto.response.TopStreamResponse;
 import com.spotify.spotify.service.SongStreamService;
 import jakarta.validation.Valid;
@@ -23,6 +24,15 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class SongStreamController {
     SongStreamService songStreamService;
+
+    @PostMapping("/play/{songId}")
+    ApiResponse<Void> increasePlayCount(@PathVariable String songId){
+        songStreamService.increasePlayCount(songId);
+        return ApiResponse.<Void>builder()
+                .code(1000)
+                .message("Play count incremented")
+                .build();
+    }
 
     @PostMapping("/create")
     ApiResponse<SongStreamResponse> createStream(@RequestBody @Valid SongStreamRequest request){
@@ -65,13 +75,12 @@ public class SongStreamController {
     }
 
     @GetMapping("/range")
-    ApiResponse<List<SongStreamResponse>> getStreamsWithinRange(@RequestParam String songId,
-                                                                @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
-                                                                @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end){
-        return ApiResponse.<List<SongStreamResponse>>builder()
+    ApiResponse<List<StreamStatResponse>> getStreamStats(@RequestParam String songId,
+                                                   @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+                                                   @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end){
+        return ApiResponse.<List<StreamStatResponse>>builder()
                 .code(1000)
-                .message("")
-                .result(songStreamService.getStreamsWithinRange(songId, start, end))
+                .result(songStreamService.getStreamStats(songId, start, end))
                 .build();
     }
 

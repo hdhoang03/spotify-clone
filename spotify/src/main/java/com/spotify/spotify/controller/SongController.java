@@ -7,6 +7,9 @@ import com.spotify.spotify.service.SongService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -112,11 +115,20 @@ public class SongController {
     }
 
     @GetMapping("/advanced-search")
-    ApiResponse<List<SongResponse>> multipleSearch(@RequestParam(required = false) String keyword, @RequestParam(required = false) String artist, @RequestParam(required = false) String category, @RequestParam(required = false) Integer year){
-        return ApiResponse.<List<SongResponse>>builder()
+    ApiResponse<Page<SongResponse>> multipleSearch(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String artist,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size
+    ){
+
+        Pageable pageable = PageRequest.of(page - 1, size);
+        return ApiResponse.<Page<SongResponse>>builder()
                 .code(1000)
                 .message("Search results")
-                .result(songService.searchSongs(keyword, artist, category, year))
+                .result(songService.searchSongs(keyword, artist, category, year, pageable))
                 .build();
     }
 }

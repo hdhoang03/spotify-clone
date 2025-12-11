@@ -2,6 +2,7 @@ package com.spotify.spotify.service;
 
 import com.spotify.spotify.dto.request.SongStreamRequest;
 import com.spotify.spotify.dto.response.SongStreamResponse;
+import com.spotify.spotify.dto.response.StreamStatResponse;
 import com.spotify.spotify.dto.response.TopStreamResponse;
 import com.spotify.spotify.entity.Song;
 import com.spotify.spotify.entity.SongStream;
@@ -17,13 +18,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -35,6 +39,14 @@ public class SongStreamService {
     SongStreamRepository songStreamRepository;
     SongRepository songRepository;
     UserRepository userRepository;
+
+    @Transactional //Query là phải có transactional
+    public void increasePlayCount(String songId){ //Tăng lượt play_count của bài hát
+        if (!songRepository.existsById(songId)){
+            throw new AppException(ErrorCode.SONG_NOT_FOUND);
+        }
+        songRepository.incrementPlayCount(songId);
+    }
 
     @Transactional //Toàn vẹn dữ liệu khi save
     public SongStreamResponse createStream(SongStreamRequest request){ //Tạo 1 lượt stream nếu nghe bài hát trên 30 với userid và songid đó
@@ -48,19 +60,28 @@ public class SongStreamService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         Song song = songRepository.findById(request.getSongId()).orElseThrow(() -> new AppException(ErrorCode.SONG_NOT_FOUND));
+//        songRepository.incrementPlayCount(song.getId());//Nếu muốn tăng playCount không liên quan đến lượt stream thì dùng cách này
+
+        //Kiểm tra thời gian cooldown 60s để tránh spam
+        List<SongStream> recent = songStreamRepository
+                .findRecentStreams(user.getId(), song.getId(), PageRequest.of(0,1));
+        if (!recent.isEmpty()){
+            LocalDateTime last = recent.get(0).getCreatedAt();
+            long seconds = Duration.between(last, LocalDateTime.now()).getSeconds();
+            if (seconds < 60){
+                return songStreamMapper.toSongStreamResponse(recent.get(0));
+            }
+        }
 
         SongStream stream = songStreamMapper.toSongStream(request);
         //Map thủ công vì trong mapper ignore
-        stream.setCreatedAt(LocalDate.now());
+        stream.setCreatedAt(LocalDateTime.now());
         stream.setUser(user);
         stream.setSong(song);
 
         if (stream.getDuration() == null){
             stream.setDuration(30L);//30s
         }
-
-        //SongStream saved = songStreamRepository.save(stream);
-        //return songStreamMapper.toSongStreamResponse(saved);
         log.debug("User {} streamed song {} length {}", user.getId(), song.getId(), stream.getDuration());
         return songStreamMapper.toSongStreamResponse(songStreamRepository.save(stream));
     }
@@ -86,11 +107,10 @@ public class SongStreamService {
         return songStreamRepository.existsByUser_IdAndSong_Id(user.getId(), songId);
     }
 
-    public List<SongStreamResponse> getStreamsWithinRange(String songId, LocalDate start, LocalDate end){ //Biểu đồ thống kê lượt stream
-        return songStreamRepository.findStreamsWithinRange(songId, start, end)
-                .stream()
-                .map(songStreamMapper::toSongStreamResponse)
-                .toList();
+    public List<StreamStatResponse> getStreamStats(String songId, LocalDate start, LocalDate end){ //Biểu đồ thống kê lượt stream
+        LocalDateTime startDateTime = start.atStartOfDay();
+        LocalDateTime endDateTime = end.atTime(LocalTime.MAX);
+        return songStreamRepository.getStreamStats(songId, startDateTime, endDateTime);
     }
 
     public List<TopStreamResponse> getTopStreamSongs(){ //Top bài hát nghe nhiều

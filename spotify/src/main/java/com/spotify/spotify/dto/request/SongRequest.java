@@ -13,7 +13,7 @@ public class SongRequest {
     String title;
     String artistId;
     String albumId;
-    String genre;//Category
+    String category;
     MultipartFile coverUrl;
     MultipartFile audioUrl;
 }

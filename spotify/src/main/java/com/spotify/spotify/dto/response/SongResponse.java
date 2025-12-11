@@ -15,9 +15,10 @@ public class SongResponse {
     String artist;
     String albumId;
     String albumName;
-    String genre;//Category
+    String category;
     String coverUrl;
     String audioUrl;
     String uploadedBy;
+    Double duration; //mới thêm
     LocalDateTime createdAt;
 }

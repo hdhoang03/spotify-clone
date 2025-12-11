@@ -45,10 +45,18 @@ public class Song {
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
 
-    //25/10
+    //để playcount và likecount để mỗi khi chạy không cần tốn tài nguyên query lại
+    @Builder.Default//Để không gán null mà gán là 0
     Long playCount = 0L;
+    @Builder.Default
     Long likeCount = 0L;
     Double duration;
+    
+    @OneToMany(mappedBy = "song", cascade = CascadeType.REMOVE)
+    Set<LikeSong> likes = new HashSet<>();
+
+    @OneToMany(mappedBy = "song", cascade = CascadeType.REMOVE)//khi xóa bài hát tự động xóa luôn like và stream
+    Set<SongStream> streams = new HashSet<>();
 
     @PrePersist
     void onCreate(){

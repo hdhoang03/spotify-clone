@@ -37,6 +37,9 @@ public class User {
     LocalDate createAt;
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     Set<Playlist> playlists = new HashSet<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    Set<LikeSong> likes = new HashSet<>();
 //    @OneToMany(mappedBy = "uploadedBy") //Danh sách bài hát mà user đã tải lên
 //    Set<Song> songs;
 
