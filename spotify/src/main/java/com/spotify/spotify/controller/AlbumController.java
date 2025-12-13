@@ -8,6 +8,8 @@ import com.spotify.spotify.service.AlbumService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,21 +31,35 @@ public class AlbumController {
                 .build();
     }
 
+    @PostMapping("/{albumId}/songs") //chưa test
+    ApiResponse<String> addSongsToAlbum(@PathVariable String albumId, @RequestBody List<String> songIds){
+        albumService.addSongsToAlbum(albumId, songIds);
+        return ApiResponse.<String>builder()
+                .code(1000)
+                .message("Songs added to album successfully")
+                .build();
+    }
+
     @GetMapping("/all")
-    ApiResponse<List<AlbumResponse>> getAllAlbum(){
-        return ApiResponse.<List<AlbumResponse>>builder()
+    ApiResponse<Page<AlbumResponse>> getAllAlbum(@RequestParam(defaultValue = "1") int page,
+                                                 @RequestParam(defaultValue = "10") int size
+    ){
+        return ApiResponse.<Page<AlbumResponse>>builder()
                 .code(1000)
                 .message("All albums fetched!")
-                .result(albumService.getAllAlbum())
+                .result(albumService.getAllAlbum(PageRequest.of(page - 1, size)))
                 .build();
     }
 
     @GetMapping("/{albumId}/songs") //Lỗi @Data trong entity nên dùng @Getter & @Setter
-    ApiResponse<List<SongResponse>> getSongsFromAlbum(@PathVariable String albumId){
-        return ApiResponse.<List<SongResponse>>builder()
+    ApiResponse<Page<SongResponse>> getSongsFromAlbum(@PathVariable String albumId,
+                                                      @RequestParam(defaultValue = "1") int page,
+                                                      @RequestParam(defaultValue = "10") int size
+    ){
+        return ApiResponse.<Page<SongResponse>>builder()
                 .code(1000)
                 .message("All songs from album have been fetched successfully!")
-                .result(albumService.getAllSongsFromAlbum(albumId))
+                .result(albumService.getAllSongsFromAlbum(albumId, PageRequest.of(page - 1, size)))
                 .build();
     }
 
@@ -84,6 +100,4 @@ public class AlbumController {
                 .result(albumService.searchAlbum(keyword))
                 .build();
     }
-
-    //Add song to album
 }

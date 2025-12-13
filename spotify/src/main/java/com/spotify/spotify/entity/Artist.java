@@ -25,8 +25,13 @@ public class Artist {
     String avatarUrl;
     //25/10
     String country;
-    String followerCount;
+    @Builder.Default //Không có thì set là 0 thay vì null
+    Long followerCount = 0L;
     LocalDate debutDate;
+
+    @Column(name = "is_deleted")
+    @Builder.Default
+    boolean deleted = false; //moi them
 
     @OneToMany(mappedBy = "artist", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     Set<Song> songs = new HashSet<>();

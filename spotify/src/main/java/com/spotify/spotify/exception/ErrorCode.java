@@ -22,6 +22,7 @@ public enum ErrorCode {
     FILE_UPLOAD_FAILED(1007, "File upload filed", HttpStatus.BAD_REQUEST),
     SONG_NOT_FOUND(1008, "Song not found", HttpStatus.NOT_FOUND),
     ARTIST_NOT_FOUND(1009, "Artist not found", HttpStatus.NOT_FOUND),
+    ARTIST_EXISTED(1020, "Artist existed.", HttpStatus.BAD_REQUEST),
     CATEGORY_ALREADY_EXISTS(1010, "Category already exists", HttpStatus.NOT_FOUND),
     CATEGORY_NOT_FOUND(1011, "Category not found", HttpStatus.NOT_FOUND),
     ALBUM_ALREADY_EXISTS(1012, "Album already exists", HttpStatus.NOT_FOUND),
@@ -31,6 +32,7 @@ public enum ErrorCode {
     STREAM_TOO_SHORT(1016, "Stream too short to create", HttpStatus.BAD_REQUEST),
     NOT_LIKED_YET(1017, "Song hasn't liked yet", HttpStatus.NOT_FOUND),
     ALREADY_LIKED(1018, "Song already liked", HttpStatus.ACCEPTED),
+    SONG_ARTIST_MISMATCH(1019, "Song does not belong to the album's artist", HttpStatus.BAD_REQUEST),
 
     ;
     int code;

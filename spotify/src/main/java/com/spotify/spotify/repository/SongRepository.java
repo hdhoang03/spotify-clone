@@ -1,6 +1,8 @@
 package com.spotify.spotify.repository;
 
 import com.spotify.spotify.entity.Song;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
@@ -20,5 +22,5 @@ public interface SongRepository extends JpaRepository<Song, String>, JpaSpecific
     Optional<Song> findByTitle(String songName);
     List<Song> findByArtist_Id(String artistId);
     List<Song> findByTitleContainingIgnoreCase(String keyword);
-    List<Song> findByAlbum_Id(String albumId);
+    Page<Song> findByAlbum_Id(String albumId, Pageable pageable);
 }

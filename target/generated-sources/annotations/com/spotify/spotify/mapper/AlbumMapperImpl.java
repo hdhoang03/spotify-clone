@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-11-25T21:56:37+0700",
+    date = "2025-12-13T09:48:05+0700",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.5 (Oracle Corporation)"
 )
 @Component
@@ -49,6 +49,21 @@ public class AlbumMapperImpl implements AlbumMapper {
         albumResponse.name( album.getName() );
         albumResponse.description( album.getDescription() );
         albumResponse.songs( songSetToSongResponseSet( album.getSongs() ) );
+
+        return albumResponse.build();
+    }
+
+    @Override
+    public AlbumResponse toAlbumSummary(Album album) {
+        if ( album == null ) {
+            return null;
+        }
+
+        AlbumResponse.AlbumResponseBuilder albumResponse = AlbumResponse.builder();
+
+        albumResponse.id( album.getId() );
+        albumResponse.name( album.getName() );
+        albumResponse.description( album.getDescription() );
 
         return albumResponse.build();
     }

@@ -14,9 +14,13 @@ import com.spotify.spotify.mapper.AlbumMapper;
 import com.spotify.spotify.mapper.SongMapper;
 import com.spotify.spotify.repository.AlbumRepository;
 import com.spotify.spotify.repository.ArtistRepository;
+import com.spotify.spotify.repository.SongRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,14 +32,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Slf4j
 public class AlbumService {
     AlbumRepository albumRepository;
     ArtistRepository artistRepository;
+    SongRepository songRepository;
     AlbumMapper albumMapper;
     Cloudinary cloudinary;
     SongMapper songMapper;
@@ -44,13 +52,12 @@ public class AlbumService {
 
     @PreAuthorize("hasRole('ADMIN')")
     public AlbumResponse createAlbum(AlbumRequest request){
-        if(albumRepository.existsByName(request.getName())){
+        if(albumRepository.existsByNameAndArtists_Id(request.getName(), request.getArtistId())){
             throw new AppException(ErrorCode.ALBUM_ALREADY_EXISTS);
         }
 
         Album album = albumMapper.toAlbum(request);
-//        String avatarPath = saveFile(request.getAvatarUrl());
-        String avatarPath = saveFileCloud(request.getAvatarUrl());
+        String avatarPath = saveFileCloud(request.getAvatarUrl(), "spotify/albums"); //"spotify/albums"
         album.setAlbumUrl(avatarPath);
 
         Artist artist = artistRepository.findById(request.getArtistId())
@@ -61,21 +68,53 @@ public class AlbumService {
         return albumMapper.toAlbumResponse(album);
     }
 
-    public List<SongResponse> getAllSongsFromAlbum(String albumId){
+    @PreAuthorize("hasRole('ADMIN')")
+    public void addSongsToAlbum(String albumId, List<String> songIds){
         Album album = albumRepository.findById(albumId)
                 .orElseThrow(() -> new AppException(ErrorCode.ALBUM_NOT_FOUND));
 
-        Set<Song> songs = album.getSongs();
-        if(songs == null || songs.isEmpty()) return Collections.emptyList();
+        List<Song> songs = songRepository.findAllById(songIds);
+        if (songs.size() != songIds.size()){
+            throw new AppException(ErrorCode.SONG_NOT_FOUND);
+        }
 
-        return songs.stream()
-                .map(songMapper::toSongResponse)
-                .collect(Collectors.toList());
+        Set<String> albumArtistIds = album.getArtists().stream()
+                .map(Artist::getId)
+                .collect(Collectors.toSet());
+
+        //Kiểm tra bài hát phải cùng 1 ca sĩ mới thêm vào 1 album được
+        for (Song song : songs){
+            String songArtistId = song.getArtist().getId();
+            if (!albumArtistIds.contains(songArtistId)){ //Kiểm tra nghệ sĩ có nằm trong danh sách nghệ sĩ của album không?
+                throw new AppException(ErrorCode.SONG_ARTIST_MISMATCH);
+            }
+            song.setAlbum(album);
+        }
+        songRepository.saveAll(songs);
+    }
+
+    public Page<SongResponse> getAllSongsFromAlbum(String albumId, Pageable pageable){
+//        Album album = albumRepository.findById(albumId)
+//                .orElseThrow(() -> new AppException(ErrorCode.ALBUM_NOT_FOUND));
+//
+//        Set<Song> songs = album.getSongs();
+//        if(songs == null || songs.isEmpty()) return Collections.emptyList();
+//
+//        return songs.stream()
+//                .map(songMapper::toSongResponse)
+//                .collect(Collectors.toList());
+
+        if(!albumRepository.existsById(albumId)){
+            throw new AppException(ErrorCode.ALBUM_NOT_FOUND);
+        }
+
+        return songRepository.findByAlbum_Id(albumId, pageable)
+                .map(songMapper::toSongResponse);
     }
 
     public List<AlbumResponse> getAlbumsByArtist(String artistId){
         Artist artist = artistRepository.findById(artistId)
-                .orElseThrow(() -> new AppException(ErrorCode.ALBUM_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.ARTIST_NOT_FOUND));
 
         List<Album> albums = albumRepository.findByArtists_Id(artistId);
 
@@ -87,10 +126,9 @@ public class AlbumService {
     }
 
     @Transactional(readOnly = true)
-    public List<AlbumResponse> getAllAlbum(){
-        return albumRepository.findAll().stream()
-                .map(albumMapper::toAlbumResponse)
-                .toList();
+    public Page<AlbumResponse> getAllAlbum(Pageable pageable){
+        return albumRepository.findAll(pageable)
+                .map(albumMapper::toAlbumSummary);//chỉ lấy album không lấy các bài hát đi kèm
     }
 
     public AlbumResponse getAlbumById(String id){
@@ -105,9 +143,10 @@ public class AlbumService {
                 .orElseThrow(() -> new AppException(ErrorCode.ALBUM_NOT_FOUND));
 
         albumMapper.updateAlbum(album, request);
+
         if (request.getAvatarUrl() != null && !request.getAvatarUrl().isEmpty()){
-//            String avatarPath = saveFile(request.getAvatarUrl());
-            String avatarPath = saveFileCloud(request.getAvatarUrl());
+            deleteFileCloud(album.getAlbumUrl(), "image");
+            String avatarPath = saveFileCloud(request.getAvatarUrl(), "spotify/albums");
             album.setAlbumUrl(avatarPath);
         }
         if (request.getArtistId() != null){
@@ -121,10 +160,12 @@ public class AlbumService {
 
     @PreAuthorize("hasRole('ADMIN')")
     public void deleteAlbum(String id){
-        if(!albumRepository.existsById(id)){
-            throw new AppException(ErrorCode.ALBUM_NOT_FOUND);
-        }
-        albumRepository.deleteById(id);
+        Album album = albumRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.ALBUM_NOT_FOUND));
+
+        deleteFileCloud(album.getAlbumUrl(), "image");
+
+        albumRepository.delete(album);
     }
 
     public List<AlbumResponse> searchAlbum(String keyword){
@@ -134,18 +175,47 @@ public class AlbumService {
                 .collect(Collectors.toList());
     }
 
-    private String saveFileCloud(MultipartFile file){
+    private String saveFileCloud(MultipartFile file, String folder){
         if(file == null || file.isEmpty()) return null;
         try {
             Map uploadResult = cloudinary.uploader().upload(
                     file.getBytes(),
                     ObjectUtils.asMap(
+                            "folder", folder,
                             "resource_type", "auto"
                     )
             );
             return uploadResult.get("secure_url").toString();
         } catch (Exception e){
             throw new AppException(ErrorCode.FILE_UPLOAD_FAILED);
+        }
+    }
+
+    private String getPublicIdFromUrl(String url){
+        if (url == null || url.isEmpty()) return null;
+        try {
+            Pattern pattern = Pattern.compile("upload/(?:v\\d+/)?([^.]+)\\.[a-z0-9]+$");
+            Matcher matcher = pattern.matcher(url);
+            if (matcher.find()){
+                return matcher.group(1);
+            }
+            return null;
+        } catch (Exception e){
+            log.error("Error parsing Public ID from URL: {}", url);
+            return null;
+        }
+
+    }
+
+    private void deleteFileCloud(String url, String resourceType){
+        String publicId = getPublicIdFromUrl(url);
+        if (publicId != null){
+            try {
+                cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("resource_type", resourceType));
+                log.info("Deleted file on Cloudinary: {} (Type: {})", publicId, resourceType);
+            } catch (Exception e){
+                log.error("Failed to delete file on Cloudinary: {}", publicId);
+            }
         }
     }
 

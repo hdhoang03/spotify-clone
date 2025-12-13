@@ -3,6 +3,7 @@ package com.spotify.spotify.controller;
 import com.spotify.spotify.dto.ApiResponse;
 import com.spotify.spotify.dto.request.UserCreationRequest;
 import com.spotify.spotify.dto.request.UserUpdateRequest;
+import com.spotify.spotify.dto.response.ArtistFollowResponse;
 import com.spotify.spotify.dto.response.ArtistResponse;
 import com.spotify.spotify.dto.response.UserResponse;
 import com.spotify.spotify.service.ArtistFollowService;
@@ -10,6 +11,8 @@ import com.spotify.spotify.service.UserService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -68,21 +71,25 @@ public class UserController {
                 .build();
     }
 
-    @GetMapping("/artist/me")
-    ApiResponse<List<ArtistResponse>> getMyFollowedArtists(){
-        return ApiResponse.<List<ArtistResponse>>builder()
+    @GetMapping("/artist/me") //cá nhân
+    ApiResponse<Page<ArtistResponse>> getMyFollowedArtists(@RequestParam(defaultValue = "1") int page,
+                                                           @RequestParam(defaultValue = "10") int size
+    ){
+        return ApiResponse.<Page<ArtistResponse>>builder()
                 .code(1000)
                 .message("My favorite artists")
-                .result(artistFollowService.getMyFollowedArtists())
+                .result(artistFollowService.getMyFollowedArtists(PageRequest.of(page -1, size)))
                 .build();
     }
 
-    @GetMapping("/follow/{userId}/artist")
-    ApiResponse<List<ArtistResponse>> getFollowedArtists(@PathVariable String userId){
-        return ApiResponse.<List<ArtistResponse>>builder()
+    @GetMapping("/follow/{userId}/artist")//cá nhân/ người khác
+    ApiResponse<Page<ArtistFollowResponse>> getFollowedArtists(@PathVariable String userId,
+                                                               @RequestParam(defaultValue = "1") int page,
+                                                               @RequestParam(defaultValue = "10") int size){
+        return ApiResponse.<Page<ArtistFollowResponse>>builder()
                 .code(1000)
                 .message("Get followed artists successfully.")
-                .result(artistFollowService.getFollowedArtists(userId))
+                .result(artistFollowService.getFollowedArtists(userId, PageRequest.of(page - 1, size)))
                 .build();
     }
 

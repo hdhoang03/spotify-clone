@@ -2,13 +2,11 @@ package com.spotify.spotify.mapper;
 
 import com.spotify.spotify.dto.request.SongRequest;
 import com.spotify.spotify.dto.response.SongResponse;
+import com.spotify.spotify.entity.Album;
 import com.spotify.spotify.entity.Artist;
 import com.spotify.spotify.entity.Category;
 import com.spotify.spotify.entity.Song;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
-import org.mapstruct.NullValuePropertyMappingStrategy;
+import org.mapstruct.*;
 
 @Mapper(componentModel = "spring",
         nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
@@ -22,10 +20,12 @@ public interface SongMapper {
     @Mapping(target = "likeCount", ignore = true)
     Song toSong(SongRequest request);
 
+    //dot notation "album.name" có khả năng null pointer nên dùng custom method
     @Mapping(source = "uploadedBy.username", target = "uploadedBy")
-    @Mapping(source = "album.name", target = "albumName")
-    @Mapping(source = "album.id", target = "albumId")
-    @Mapping(source = "category.name", target = "category")
+    @Mapping(source = "album", target = "albumName", qualifiedByName = "mapAlbumName")
+    @Mapping(source = "album", target = "albumId", qualifiedByName = "mapAlbumId")
+    @Mapping(source = "category", target = "category", qualifiedByName = "mapCategoryName")
+    @Mapping(source = "artist", target = "artist", qualifiedByName = "mapArtistName")
     SongResponse toSongResponse(Song song);
 
     @Mapping(target = "uploadedBy", ignore = true)
@@ -49,7 +49,26 @@ public interface SongMapper {
         return artist;
     }
 
+    @Named("mapAlbumName")
+    default String mapAlbumName(Album album){
+        if (album == null) return null;
+        return album.getName();
+    }
+
+    @Named("mapAlbumId")
+    default String mapAlbumId(Album album){
+        if (album == null) return null;
+        return album.getId();
+    }
+
+    @Named("mapArtistName")
+    default String mapArtistName(Artist artist){
+        if (artist == null) return null;
+        return artist.getName();
+    }
+
     //Category -> String
+    @Named("mapCategoryName")
     default String mapCategoryName(Category category){
         return category != null ? category.getName() : null;
     }

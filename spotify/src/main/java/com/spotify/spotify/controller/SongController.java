@@ -70,11 +70,14 @@ public class SongController {
     }
 
     @GetMapping("/album/{albumId}")
-    ApiResponse<List<SongResponse>> getSongsByAlbum(@PathVariable String albumId){
-        return ApiResponse.<List<SongResponse>>builder()
+    ApiResponse<Page<SongResponse>> getSongsByAlbum(@PathVariable String albumId,
+                                                    @RequestParam(defaultValue = "1") int page,
+                                                    @RequestParam(defaultValue = "10") int size
+    ){
+        return ApiResponse.<Page<SongResponse>>builder()
                 .code(1000)
                 .message("All songs from album have been fetched!")
-                .result(songService.getSongsByAlbum(albumId))
+                .result(songService.getSongsByAlbum(albumId, PageRequest.of(page - 1, size)))
                 .build();
     }
 

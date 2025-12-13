@@ -143,10 +143,9 @@ public class SongService {
                 .toList();
     }
 
-    public List<SongResponse> getSongsByAlbum(String albumId){
-        return songRepository.findByAlbum_Id(albumId).stream()
-                .map(songMapper::toSongResponse)
-                .toList();
+    public Page<SongResponse> getSongsByAlbum(String albumId, Pageable pageable){
+        return songRepository.findByAlbum_Id(albumId, pageable)
+                .map(songMapper::toSongResponse);
     }
 
     public List<SongResponse> getSongByArtist(String artistId){
@@ -255,7 +254,7 @@ public class SongService {
     private String getPublicIdFromUrl(String url){
         if (url == null || url.isEmpty()) return null;
         try {
-            Pattern pattern = Pattern.compile("upload/(?:v\\d+/)?([^\\\\.]+)\\.[a-z0-9]+$");
+            Pattern pattern = Pattern.compile("upload/(?:v\\d+/)?([^.]+)\\.[a-z0-9]+$");
             Matcher matcher = pattern.matcher(url);
             if (matcher.find()){
                 return matcher.group(1);

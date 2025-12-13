@@ -9,6 +9,9 @@ import com.spotify.spotify.service.ArtistService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -32,11 +35,12 @@ public class ArtistController {
     }
 
     @GetMapping("/all")
-    ApiResponse<List<ArtistResponse>> getAllArtists(){
-        return ApiResponse.<List<ArtistResponse>>builder()
+    ApiResponse<Page<ArtistResponse>> getAllArtists(@RequestParam(defaultValue = "1") int page,
+                                                    @RequestParam(defaultValue = "10") int size){
+        return ApiResponse.<Page<ArtistResponse>>builder()
                 .code(1000)
                 .message("All artists are fetched!")
-                .result(artistService.getAllArtists())
+                .result(artistService.getAllArtists(PageRequest.of(page - 1, size, Sort.by("name").ascending())))
                 .build();
     }
 
@@ -60,11 +64,14 @@ public class ArtistController {
     }
 
     @GetMapping("/search")
-    ApiResponse<List<ArtistResponse>> searchArtists(@RequestParam String keyword){
-        return ApiResponse.<List<ArtistResponse>>builder()
+    ApiResponse<Page<ArtistResponse>> searchArtists(@RequestParam String keyword,
+                                                    @RequestParam(defaultValue = "1") int page,
+                                                    @RequestParam(defaultValue = "10") int size
+    ){
+        return ApiResponse.<Page<ArtistResponse>>builder()
                 .code(1000)
                 .message("")
-                .result(artistService.searchArtists(keyword))
+                .result(artistService.searchArtists(keyword, PageRequest.of(page - 1, size)))
                 .build();
     }
 

@@ -26,3 +26,7 @@ Ví dụ GET /song/{id}/recommendations
 - Xem danh sách người đang theo dõi của bản thân
 - Xem danh sách người đang theo dõi của người khác
 
+
+11/12 - phải làm thêm
+1. Thêm hàm tăng số lượng người theo dõi ở artist
+
