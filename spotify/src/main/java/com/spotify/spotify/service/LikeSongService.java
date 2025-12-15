@@ -16,6 +16,8 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,15 +46,13 @@ public class LikeSongService {
         return likeSongRepository.countBySong_Id(songId);
     }
 
-    public List<LikeSongResponse> getMyLikedSongs(){
+    public Page<LikeSongResponse> getMyLikedSongs(Pageable pageable){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        return likeSongRepository.findAllByUserIdFetchSong(user.getId())
-                .stream()
-                .map(likeSongMapper::toLikeSongResponse)
-                .toList();
+        return likeSongRepository.findAllByUserIdFetchSong(user.getId(), pageable)
+                .map(likeSongMapper::toLikeSongResponse);
     }
 
     @Transactional
@@ -101,7 +101,7 @@ public class LikeSongService {
         songRepository.save(song);
     }
 
-    public List<TopLikeSongResponse> getTopLikedSongs(){
-        return likeSongRepository.findTopLikedSongs();
+    public Page<TopLikeSongResponse> getTopLikedSongs(Pageable pageable){
+        return likeSongRepository.findTopLikedSongs(pageable);
     }
 }

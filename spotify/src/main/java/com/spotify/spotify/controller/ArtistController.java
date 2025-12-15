@@ -44,7 +44,7 @@ public class ArtistController {
                 .build();
     }
 
-    @GetMapping("/{artistId}/albums")//Do sai tên biến @PathVariable là albumId
+    @GetMapping("/albums/{artistId}")//Do sai tên biến @PathVariable là albumId
     ApiResponse<List<AlbumResponse>> getAlbumsByArtist(@PathVariable String artistId){
         return ApiResponse.<List<AlbumResponse>>builder()
                 .code(1000)
@@ -75,7 +75,7 @@ public class ArtistController {
                 .build();
     }
 
-    @PutMapping("/update/{id}")
+    @PutMapping("/{id}/update")
     ApiResponse<ArtistResponse> updateArtist(@PathVariable String id, ArtistRequest request){
         ArtistResponse response = artistService.updateArtist(id, request);
         return ApiResponse.<ArtistResponse>builder()
@@ -85,12 +85,21 @@ public class ArtistController {
                 .build();
     }
 
-    @DeleteMapping("/delete/{id}")
+    @DeleteMapping("/{id}/delete")
     ApiResponse<Void> deleteArtist(@PathVariable String id){
         artistService.deleteArtist(id);
         return ApiResponse.<Void>builder()
                 .code(1000)
-                .message("Artist has been deleted!")
+                .message("Artist deleted!")
+                .build();
+    }
+
+    @PatchMapping("/{id}/restore")
+    ApiResponse<Void> restoreArtist(@PathVariable String id){
+        artistService.restoreArtist(id);
+        return ApiResponse.<Void>builder()
+                .code(1000)
+                .message("Artist restored!")
                 .build();
     }
 }

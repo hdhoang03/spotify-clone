@@ -37,6 +37,7 @@ public class SecurityConfig {
             "/song/**", "/song/allSongs", "/song/search", "/advanced-search",
             "/stream/count/**", "/stream/range/**",
             "/like/top",
+            "/search",
     };
 
     @Bean

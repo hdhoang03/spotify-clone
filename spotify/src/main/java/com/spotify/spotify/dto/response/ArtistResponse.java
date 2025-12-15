@@ -15,5 +15,5 @@ public class ArtistResponse {
     String name;
     String description;
     String avatarUrl;
-    List<SongResponse> songs;
+//    List<SongResponse> songs;
 }

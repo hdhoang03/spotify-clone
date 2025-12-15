@@ -1,18 +1,17 @@
-package com.spotify.spotify.dto.response;
+package com.spotify.spotify.dto.request;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import java.util.Set;
+import org.springframework.web.multipart.MultipartFile;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class AlbumResponse {
-    String id;
+public class CategoryUpdateRequest {
     String name;
+    MultipartFile coverUrl;
     String description;
-    String avatarUrl;//có gì sửa sau
-//    Set<SongResponse> songs;
+    Boolean active;
 }

@@ -2,17 +2,18 @@ package com.spotify.spotify.dto.response;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import java.util.Set;
 
-@Data
+@Getter
+@Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class AlbumResponse {
+public class SearchSongResponse {
     String id;
-    String name;
-    String description;
-    String avatarUrl;//có gì sửa sau
-//    Set<SongResponse> songs;
+    String title;
+    String coverUrl;
+    String audioUrl;
+    String artistName;
+    String artistId;
 }

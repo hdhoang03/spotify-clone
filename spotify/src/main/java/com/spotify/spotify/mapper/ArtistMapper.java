@@ -12,6 +12,7 @@ import org.mapstruct.MappingTarget;
 public interface ArtistMapper {
     @Mapping(target = "avatarUrl", ignore = true)
     Artist toArtist(ArtistRequest request);
+    @Mapping(target = "songs", ignore = true)
     ArtistResponse toArtistResponse(Artist artist);
     ArtistFollowResponse toArtistFollowResponse(Artist artist);
     @Mapping(target = "avatarUrl", ignore = true)

@@ -33,7 +33,9 @@ public enum ErrorCode {
     NOT_LIKED_YET(1017, "Song hasn't liked yet", HttpStatus.NOT_FOUND),
     ALREADY_LIKED(1018, "Song already liked", HttpStatus.ACCEPTED),
     SONG_ARTIST_MISMATCH(1019, "Song does not belong to the album's artist", HttpStatus.BAD_REQUEST),
-
+    CANNOT_DELETE_DEFAULT_CATEGORY(1021, "Can't delete default category", HttpStatus.BAD_REQUEST),
+    SONG_ALREADY_IN_PLAYLIST(1022, "Song already in playlist", HttpStatus.BAD_REQUEST),
+    SONG_NOT_IN_PLAYLIST(1023, "Song not in this playlist, try again", HttpStatus.BAD_REQUEST),
     ;
     int code;
     String message;

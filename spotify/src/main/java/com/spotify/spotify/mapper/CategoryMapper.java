@@ -1,6 +1,7 @@
 package com.spotify.spotify.mapper;
 
 import com.spotify.spotify.dto.request.CategoryRequest;
+import com.spotify.spotify.dto.request.CategoryUpdateRequest;
 import com.spotify.spotify.dto.response.CategoryResponse;
 import com.spotify.spotify.entity.Category;
 import org.mapstruct.Mapper;
@@ -13,5 +14,5 @@ public interface CategoryMapper {
     Category toCategory(CategoryRequest request);
     CategoryResponse toCategoryResponse(Category category);
     @Mapping(target = "coverUrl", ignore = true)
-    void updateCategory(@MappingTarget Category category, CategoryRequest request);
+    void updateCategory(@MappingTarget Category category, CategoryUpdateRequest request);
 }

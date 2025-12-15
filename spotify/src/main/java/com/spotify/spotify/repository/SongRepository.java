@@ -19,8 +19,19 @@ public interface SongRepository extends JpaRepository<Song, String>, JpaSpecific
     @Query("UPDATE Song s SET s.playCount = s.playCount + 1 WHERE s.id = :id")
     int incrementPlayCount(@Param("id") String id);
 
-    Optional<Song> findByTitle(String songName);
     List<Song> findByArtist_Id(String artistId);
-    List<Song> findByTitleContainingIgnoreCase(String keyword);
+    Page<Song> findByTitleContainingIgnoreCaseAndDeletedFalse(String keyword, Pageable pageable);
     Page<Song> findByAlbum_Id(String albumId, Pageable pageable);
+    @Query("""
+            SELECT s FROM Song s
+            LEFT JOIN FETCH s.album
+            LEFT JOIN FETCH s.artist a
+            LEFT JOIN FETCH s.category
+            WHERE s.deleted = false
+            AND (LOWER(s.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                OR
+                (a.id IS NOT NULL AND LOWER(a.name) LIKE LOWER(CONCAT('%', :keyword, '%')))
+            )
+    """)
+    List<Song> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 }

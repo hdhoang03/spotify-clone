@@ -5,6 +5,7 @@ import com.cloudinary.utils.ObjectUtils;
 import com.spotify.spotify.dto.request.ArtistRequest;
 import com.spotify.spotify.dto.response.ArtistResponse;
 import com.spotify.spotify.entity.Artist;
+import com.spotify.spotify.entity.Song;
 import com.spotify.spotify.exception.AppException;
 import com.spotify.spotify.exception.ErrorCode;
 import com.spotify.spotify.mapper.ArtistMapper;
@@ -18,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -39,6 +41,7 @@ public class ArtistService {
     ArtistMapper artistMapper;
     Cloudinary cloudinary;
 
+    @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public ArtistResponse createArtist(ArtistRequest request){
         if (artistRepository.existsByNameIgnoreCase(request.getName())){
@@ -60,6 +63,7 @@ public class ArtistService {
                 .map(artistMapper::toArtistResponse);
     }
 
+    @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public ArtistResponse updateArtist(String id, ArtistRequest request){
         Artist artist = artistRepository.findById(id)
@@ -78,11 +82,37 @@ public class ArtistService {
         return artistMapper.toArtistResponse(artist);
     }
 
+    @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public void deleteArtist(String id){
         Artist artist = artistRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ARTIST_NOT_FOUND));
+
+        if (artist.isDeleted()) return;
+
         artist.setDeleted(true);
+
+        if (artist.getSongs() != null || !artist.getSongs().isEmpty()){
+            artist.getSongs().forEach(song -> song.setDeleted(true));
+        }
+
+        artistRepository.save(artist);
+    }
+
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public void restoreArtist(String id){
+        Artist artist = artistRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.ARTIST_NOT_FOUND));
+
+        if(!artist.isDeleted()) return;
+
+        artist.setDeleted(false);
+
+        if (artist.getSongs() != null && !artist.getSongs().isEmpty()){
+            artist.getSongs().forEach(song -> song.setDeleted(false));
+        }
+
         artistRepository.save(artist);
     }
 

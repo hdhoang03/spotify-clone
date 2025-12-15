@@ -130,11 +130,9 @@ public class SongService {
         return songMapper.toSongResponse(song);
     }
 
-    public List<SongResponse> searchSongsByTitle(String keyword){
-        return songRepository.findByTitleContainingIgnoreCase(keyword)
-                .stream()
-                .map(songMapper::toSongResponse)
-                .toList();
+    public Page<SongResponse> searchSongsByTitle(String keyword, Pageable pageable){
+        return songRepository.findByTitleContainingIgnoreCaseAndDeletedFalse(keyword, pageable)
+                .map(songMapper::toSongResponse);
     }
 
     public List<SongResponse> getAllSongs(){

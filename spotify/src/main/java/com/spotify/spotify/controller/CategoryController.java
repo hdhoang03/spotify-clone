@@ -2,11 +2,14 @@ package com.spotify.spotify.controller;
 
 import com.spotify.spotify.dto.ApiResponse;
 import com.spotify.spotify.dto.request.CategoryRequest;
+import com.spotify.spotify.dto.request.CategoryUpdateRequest;
 import com.spotify.spotify.dto.response.CategoryResponse;
 import com.spotify.spotify.service.CategoryService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,9 +32,11 @@ public class CategoryController {
     }
 
     @GetMapping()
-    ApiResponse<List<CategoryResponse>> getAllCategories(){
-        List<CategoryResponse> responses = categoryService.getAllCategories();
-        return ApiResponse.<List<CategoryResponse>>builder()
+    ApiResponse<Page<CategoryResponse>> getAllCategories(@RequestParam(defaultValue = "1") int page,
+                                                         @RequestParam(defaultValue = "10") int size
+    ){
+        Page<CategoryResponse> responses = categoryService.getAllCategories(PageRequest.of(page - 1, size));
+        return ApiResponse.<Page<CategoryResponse>>builder()
                 .code(1000)
                 .message("All categories fetched!")
                 .result(responses)
@@ -49,7 +54,7 @@ public class CategoryController {
     }
 
     @PutMapping("/update/{id}")
-    ApiResponse<CategoryResponse> updateCategory(@PathVariable String id, @ModelAttribute CategoryRequest request){
+    ApiResponse<CategoryResponse> updateCategory(@PathVariable String id, @ModelAttribute CategoryUpdateRequest request){
         CategoryResponse response = categoryService.updateCategory(id, request);
         return ApiResponse.<CategoryResponse>builder()
                 .code(1000)
@@ -68,9 +73,12 @@ public class CategoryController {
     }
 
     @GetMapping("/search")
-    ApiResponse<List<CategoryResponse>> searchCategories(@RequestParam String keyword){
-        List<CategoryResponse> responses = categoryService.searchCategories(keyword);
-        return ApiResponse.<List<CategoryResponse>>builder()
+    ApiResponse<Page<CategoryResponse>> searchCategories(@RequestParam String keyword,
+                                                         @RequestParam(defaultValue = "1") int page,
+                                                         @RequestParam(defaultValue = "10") int size
+    ){
+        Page<CategoryResponse> responses = categoryService.searchCategories(keyword, PageRequest.of(page - 1, size));
+        return ApiResponse.<Page<CategoryResponse>>builder()
                 .code(1000)
                 .message("Categories search result!")
                 .result(responses)

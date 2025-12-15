@@ -7,6 +7,8 @@ import com.spotify.spotify.service.LikeSongService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -36,11 +38,13 @@ public class LikeSongController {
     }
 
     @GetMapping("/my")
-    ApiResponse<List<LikeSongResponse>> getMyLikedSongs(){
-        return ApiResponse.<List<LikeSongResponse>>builder()
+    ApiResponse<Page<LikeSongResponse>> getMyLikedSongs(@RequestParam(defaultValue = "1") int page,
+                                                        @RequestParam(defaultValue = "10") int size
+    ){
+        return ApiResponse.<Page<LikeSongResponse>>builder()
                 .code(1000)
                 .message("My liked songs")
-                .result(likeSongService.getMyLikedSongs())
+                .result(likeSongService.getMyLikedSongs(PageRequest.of(page - 1, size)))
                 .build();
     }
 
@@ -72,11 +76,12 @@ public class LikeSongController {
     }
 
     @GetMapping("/top")
-    ApiResponse<List<TopLikeSongResponse>> getTopLikedSongs(){
-        return ApiResponse.<List<TopLikeSongResponse>>builder()
+    ApiResponse<Page<TopLikeSongResponse>> getTopLikedSongs(@RequestParam(defaultValue = "1") int page,
+                                                            @RequestParam(defaultValue = "10") int size){
+        return ApiResponse.<Page<TopLikeSongResponse>>builder()
                 .code(1000)
                 .message("Top liked songs")
-                .result(likeSongService.getTopLikedSongs())
+                .result(likeSongService.getTopLikedSongs(PageRequest.of(page - 1, size)))
                 .build();
     }
 }

@@ -31,4 +31,8 @@ public class Album {
     Set<Song> songs = new HashSet<>();
 
     LocalDate releaseDate; //25/10
+
+    @Column(name = "is_deleted")
+    @Builder.Default
+    boolean deleted = false;
 }

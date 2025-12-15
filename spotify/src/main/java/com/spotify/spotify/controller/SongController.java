@@ -100,11 +100,14 @@ public class SongController {
     }
 
     @GetMapping("/search")
-    ApiResponse<List<SongResponse>> searchSongsByTitle(@RequestParam String keyword){
-        return ApiResponse.<List<SongResponse>>builder()
+    ApiResponse<Page<SongResponse>> searchSongsByTitle(@RequestParam String keyword,
+                                                       @RequestParam(defaultValue = "1") int page,
+                                                       @RequestParam(defaultValue = "10") int size
+    ){
+        return ApiResponse.<Page<SongResponse>>builder()
                 .code(1000)
                 .message("Songs...")
-                .result(songService.searchSongsByTitle(keyword))
+                .result(songService.searchSongsByTitle(keyword, PageRequest.of(page - 1, size)))
                 .build();
     }
 

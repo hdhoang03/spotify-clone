@@ -12,9 +12,9 @@ import java.util.Set;
 @Entity
 @Getter
 @Setter
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Category {
     @Id
@@ -26,10 +26,17 @@ public class Category {
     @Enumerated(EnumType.STRING)
     CategoryType type;
     String coverUrl;
-    Boolean active;
+
+    @Builder.Default
+    boolean active = true;
+
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = false)
     @JsonManagedReference
     Set<Song> songs = new HashSet<>();
 
     Integer displayOrder; //Thứ tự hiển thị 25/10
+
+    @Column(name = "is_deleted")
+    @Builder.Default
+    boolean deleted = false;
 }

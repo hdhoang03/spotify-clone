@@ -18,7 +18,7 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
 public interface PlaylistMapper {
     @Mapping(target = "coverUrl", ignore = true)
     @Mapping(target = "songs", ignore = true)//Tạo playlist mới để trống
-    Playlist toPlaylistRequest(PlaylistRequest request);
+    Playlist toPlaylist(PlaylistRequest request);
 
     @Mapping(target = "songCount", expression = "java(playlist.getSongs().size())")
     @Mapping(target = "user", expression = "java(toUserSummary(playlist.getUser()))")

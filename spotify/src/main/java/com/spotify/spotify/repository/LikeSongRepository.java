@@ -2,6 +2,8 @@ package com.spotify.spotify.repository;
 
 import com.spotify.spotify.dto.response.TopLikeSongResponse;
 import com.spotify.spotify.entity.LikeSong;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -18,8 +20,7 @@ public interface LikeSongRepository extends JpaRepository<LikeSong, String> {
             JOIN FETCH l.song
             WHERE l.user.id =:userId
             """)
-
-    List<LikeSong> findAllByUserIdFetchSong(String userId); //Danh sách bài hát user đã like
+    Page<LikeSong> findAllByUserIdFetchSong(String userId, Pageable pageable); //Danh sách bài hát user đã like
 
     Long countBySong_Id(String songId); //Đếm số lượt like của bài hát
 
@@ -33,5 +34,5 @@ public interface LikeSongRepository extends JpaRepository<LikeSong, String> {
             GROUP BY l.song.title, l.song.id, l.song.artist.name, l.song.coverUrl, l.song.duration
             ORDER BY COUNT(l) DESC
             """)
-    List<TopLikeSongResponse> findTopLikedSongs();
+    Page<TopLikeSongResponse> findTopLikedSongs(Pageable pageable);
 }

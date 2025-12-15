@@ -29,8 +29,6 @@ public class Song {
     @JoinColumn(name = "album_id")
     @JsonBackReference
     Album album;
-//    @Column(nullable = true, length = 100)
-//    String genre;//Thể loại
     String coverUrl;
     String audioUrl;
     @ManyToOne(fetch = FetchType.LAZY)
@@ -51,6 +49,10 @@ public class Song {
     @Builder.Default
     Long likeCount = 0L;
     Double duration;
+
+    @Column(name = "is_deleted")
+    @Builder.Default
+    boolean deleted = false;
     
     @OneToMany(mappedBy = "song", cascade = CascadeType.REMOVE)
     Set<LikeSong> likes = new HashSet<>();

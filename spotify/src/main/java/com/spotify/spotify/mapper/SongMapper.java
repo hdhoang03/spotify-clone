@@ -1,6 +1,7 @@
 package com.spotify.spotify.mapper;
 
 import com.spotify.spotify.dto.request.SongRequest;
+import com.spotify.spotify.dto.response.SearchSongResponse;
 import com.spotify.spotify.dto.response.SongResponse;
 import com.spotify.spotify.entity.Album;
 import com.spotify.spotify.entity.Artist;
@@ -27,6 +28,11 @@ public interface SongMapper {
     @Mapping(source = "category", target = "category", qualifiedByName = "mapCategoryName")
     @Mapping(source = "artist", target = "artist", qualifiedByName = "mapArtistName")
     SongResponse toSongResponse(Song song);
+
+    @Named("toSongSearchResponse")
+    @Mapping(source = "artist.name", target = "artistName")
+    @Mapping(source = "artist.id", target = "artistId")
+    SearchSongResponse toSongSearchResponse(Song song);
 
     @Mapping(target = "uploadedBy", ignore = true)
     @Mapping(target = "coverUrl", ignore = true)
