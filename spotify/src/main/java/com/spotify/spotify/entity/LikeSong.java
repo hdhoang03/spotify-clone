@@ -35,6 +35,5 @@ public class LikeSong {
     public LikeSong(User user, Song song){
         this.user = user;
         this.song = song;
-        this.likedAt = LocalDateTime.now();
     }
 }

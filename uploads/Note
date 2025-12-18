@@ -28,5 +28,9 @@ Ví dụ GET /song/{id}/recommendations
 
 
 11/12 - phải làm thêm
-1. Thêm hàm tăng số lượng người theo dõi ở artist
+1. Thêm hàm tăng số lượng người theo dõi ở artist (xong)
+2. Thêm redis
+
+14/12 - Sửa
+1.Album phải xem lại toàn bộ
 

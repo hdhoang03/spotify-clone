@@ -19,6 +19,6 @@ public class PlaylistResponse {
     Boolean isPublic;
     LocalDateTime createdAt;
     UserSummaryResponse user;
-    List<SongResponse> songs;
+//    List<SongResponse> songs;
     Integer songCount;
 }

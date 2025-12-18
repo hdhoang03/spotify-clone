@@ -1,21 +1,23 @@
 package com.spotify.spotify.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import com.spotify.spotify.dto.request.AuthenticationRequest;
-import com.spotify.spotify.dto.request.IntrospectRequest;
-import com.spotify.spotify.dto.request.LogoutRequest;
-import com.spotify.spotify.dto.request.RefreshRequest;
+import com.spotify.spotify.constaint.PredefinedRole;
+import com.spotify.spotify.dto.request.*;
 import com.spotify.spotify.dto.response.AuthenticationResponse;
 import com.spotify.spotify.dto.response.IntrospectResponse;
 import com.spotify.spotify.entity.InvalidatedToken;
+import com.spotify.spotify.entity.Role;
 import com.spotify.spotify.entity.User;
 import com.spotify.spotify.exception.AppException;
 import com.spotify.spotify.exception.ErrorCode;
+import com.spotify.spotify.mapper.UserMapper;
 import com.spotify.spotify.repository.InvalidTokenRepository;
+import com.spotify.spotify.repository.RoleRepository;
 import com.spotify.spotify.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,8 @@ import org.springframework.beans.factory.annotation.Value;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -31,9 +35,8 @@ import org.springframework.util.CollectionUtils;
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
-import java.util.StringJoiner;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
@@ -42,6 +45,11 @@ import java.util.UUID;
 public class AuthenticationService {
     UserRepository userRepository;
     InvalidTokenRepository invalidTokenRepository;
+    RedisTemplate<String, Object> redisTemplate;
+    EmailService emailService;
+    UserMapper userMapper;
+    RoleRepository roleRepository;
+    ObjectMapper objectMapper;
 
     @NonFinal
     @Value("${jwt.signerKey}")
@@ -54,6 +62,108 @@ public class AuthenticationService {
     @NonFinal
     @Value("${jwt.refreshable-duration}")
     protected long REFRESHABLE_DURATION;
+
+    public void register(UserCreationRequest request){
+        if (userRepository.existsByUsername(request.getUsername())){
+            throw new AppException(ErrorCode.USER_ALREADY_EXIST);
+        }
+        if (userRepository.existsByEmail(request.getEmail())){
+            throw new AppException(ErrorCode.EMAIL_EXISTED);
+        }
+
+        String otp = String.valueOf(new Random().nextInt(900000) + 100000);
+        //Tạo key trong redis "REG_OTP:example@gmail.com"
+        String redisKey = "REG_OTP:" + request.getEmail();
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("request", request);
+        data.put("otp", otp);
+
+        redisTemplate.opsForValue().set(redisKey, data, 5, TimeUnit.MINUTES);
+        emailService.sendHtmlEmail(request.getEmail(), "Account verification", "email-otp", Map.of("name", request.getUsername(), "otp", otp));
+    }
+
+    public AuthenticationResponse verifyAndCreateUser(String email, String otpCode){
+        String redisKey = "REG_OTP:" + email;
+
+        Map<String, Object> data = (Map<String, Object>) redisTemplate.opsForValue().get(redisKey);
+        if (data == null){
+            throw new AppException(ErrorCode.OTP_EXPIRED);
+        }
+
+        String cachedOtp = (String) data.get("otp");
+        if (!cachedOtp.equals(otpCode)){
+            throw new AppException(ErrorCode.OTP_INVALID);
+        }
+        UserCreationRequest request = objectMapper.convertValue(data.get("request"), UserCreationRequest.class);
+
+        User user = userMapper.toUser(request);
+        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+
+        HashSet<Role> roles = new HashSet<>();
+        roleRepository.findById(PredefinedRole.USER_ROLE).ifPresent(roles::add);
+        user.setRoles(roles);
+        user.setEnabled(true);
+
+        userRepository.save(user);
+
+        redisTemplate.delete(redisKey);
+
+        return AuthenticationResponse.builder()
+                .token(generateToken(user))
+                .authenticated(true)
+                .build();
+    }
+
+    public void changePassword(ChangePasswordRequest request){
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())){
+            throw new AppException(ErrorCode.PASSWORD_INCORRECT);
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+    }
+
+    public void sendForgotPasswordOtp(String email){
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        String otp = String.valueOf(new Random().nextInt(900000) + 100000);
+        String redisKey = "RESET_PW_OTP:" + email;
+
+        redisTemplate.opsForValue().set(redisKey, otp, 5, TimeUnit.MINUTES);
+
+        emailService.sendHtmlEmail(user.getEmail(), "Reset password OTP", "email-otp",
+                Map.of("name", user.getUsername(), "otp", otp));
+    }
+
+    public void resetPassword(ResetPasswordRequest request){
+        String redisKey = "RESET_PW_OTP:" + request.getEmail();
+        String cachedOtp = (String) redisTemplate.opsForValue().get(redisKey);//Lấy trong Redis
+        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
+
+        if (cachedOtp == null){
+            throw new AppException(ErrorCode.OTP_EXPIRED);
+        }
+
+        if (!cachedOtp.equals(request.getOtpCode())){
+            throw new AppException(ErrorCode.OTP_INVALID);
+        }
+
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        redisTemplate.delete(redisKey);
+    }
 
     public IntrospectResponse introspect(IntrospectRequest request) throws JOSEException, ParseException {
         var token = request.getToken();

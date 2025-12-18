@@ -69,4 +69,18 @@ public class Song {
     void onUpdate(){
         this.updatedAt = LocalDateTime.now();
     }
+
+    //Để remove song hoạt động
+//    @Override
+//    public boolean equals(Object o){
+//        if (this ==  o) return true;
+//        if (!(o instanceof Song)) return false;
+//        Song song = (Song) o;
+//        return id != null && id.equals(song.id);
+//    }
+//
+//    @Override
+//    public int hashCode(){
+//        return getClass().hashCode();
+//    }
 }

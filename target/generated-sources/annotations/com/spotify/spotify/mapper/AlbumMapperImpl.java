@@ -2,25 +2,17 @@ package com.spotify.spotify.mapper;
 
 import com.spotify.spotify.dto.request.AlbumRequest;
 import com.spotify.spotify.dto.response.AlbumResponse;
-import com.spotify.spotify.dto.response.SongResponse;
 import com.spotify.spotify.entity.Album;
-import com.spotify.spotify.entity.Song;
-import java.util.LinkedHashSet;
-import java.util.Set;
 import javax.annotation.processing.Generated;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-12-13T09:48:05+0700",
+    date = "2025-12-17T00:32:08+0700",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.5 (Oracle Corporation)"
 )
 @Component
 public class AlbumMapperImpl implements AlbumMapper {
-
-    @Autowired
-    private SongMapper songMapper;
 
     @Override
     public Album toAlbum(AlbumRequest request) {
@@ -48,7 +40,6 @@ public class AlbumMapperImpl implements AlbumMapper {
         albumResponse.id( album.getId() );
         albumResponse.name( album.getName() );
         albumResponse.description( album.getDescription() );
-        albumResponse.songs( songSetToSongResponseSet( album.getSongs() ) );
 
         return albumResponse.build();
     }
@@ -76,18 +67,5 @@ public class AlbumMapperImpl implements AlbumMapper {
 
         album.setName( request.getName() );
         album.setDescription( request.getDescription() );
-    }
-
-    protected Set<SongResponse> songSetToSongResponseSet(Set<Song> set) {
-        if ( set == null ) {
-            return null;
-        }
-
-        Set<SongResponse> set1 = new LinkedHashSet<SongResponse>( Math.max( (int) ( set.size() / .75f ) + 1, 16 ) );
-        for ( Song song : set ) {
-            set1.add( songMapper.toSongResponse( song ) );
-        }
-
-        return set1;
     }
 }

@@ -30,7 +30,8 @@ public class SecurityConfig {
     @Autowired
     private UserRepository userRepository;
 
-    private final String[] PUBLIC_ENDPOINTS = {"/user/**", "/user", "/auth/**",
+    private final String[] PUBLIC_ENDPOINTS = {"/user/**", "/user",
+            "/auth/token", "/auth/introspect", "/auth/logout", "/auth/refresh", "/auth/register", "/auth/verify", "/auth/forgot-password", "/auth/reset-password",
             "/categories","/categories/**", "/categories/search",
             "/albums", "/albums/**", "/albums/all",
             "/artist", "/artist/**",

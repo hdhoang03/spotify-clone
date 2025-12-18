@@ -1,8 +1,10 @@
 package com.spotify.spotify.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spotify.spotify.constaint.PredefinedRole;
 import com.spotify.spotify.dto.request.UserCreationRequest;
 import com.spotify.spotify.dto.request.UserUpdateRequest;
+import com.spotify.spotify.dto.response.AuthenticationResponse;
 import com.spotify.spotify.dto.response.UserResponse;
 import com.spotify.spotify.entity.ArtistFollow;
 import com.spotify.spotify.entity.Role;
@@ -18,13 +20,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -47,7 +50,6 @@ public class UserService {
         roleRepository.findById(PredefinedRole.USER_ROLE).ifPresent(roles::add);
         user.setRoles(roles);
         user.setEnabled(true);
-        user.setIsPublicProfile(true);
 
         try {
             user = userRepository.save(user);
@@ -90,12 +92,11 @@ public class UserService {
                 .toList();
     }
 
-    public UserResponse togglePrivacy(String username, boolean isPublic){ //27/10
+    public void togglePrivacy(String username, boolean isPublic){
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        user.setIsPublicProfile(isPublic);
+        user.setPublicProfile(isPublic); //Gọi api đảo trạng thái
         userRepository.save(user);
-        return userMapper.toUserResponse(user);
     }
 }

@@ -1,6 +1,5 @@
 package com.spotify.spotify.mapper;
 
-import com.spotify.spotify.dto.request.LikeSongRequest;
 import com.spotify.spotify.dto.response.LikeSongResponse;
 import com.spotify.spotify.entity.LikeSong;
 import com.spotify.spotify.entity.Song;
@@ -17,7 +16,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-12-13T09:48:05+0700",
+    date = "2025-12-17T00:32:08+0700",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.5 (Oracle Corporation)"
 )
 @Component
@@ -32,17 +31,6 @@ public class LikeSongMapperImpl implements LikeSongMapper {
         catch ( DatatypeConfigurationException ex ) {
             throw new RuntimeException( ex );
         }
-    }
-
-    @Override
-    public LikeSong toLikeSong(LikeSongRequest request) {
-        if ( request == null ) {
-            return null;
-        }
-
-        LikeSong.LikeSongBuilder likeSong = LikeSong.builder();
-
-        return likeSong.build();
     }
 
     @Override

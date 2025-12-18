@@ -14,6 +14,7 @@ import com.spotify.spotify.repository.SongRepository;
 import com.spotify.spotify.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -25,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
 public class LikeSongService {
@@ -68,17 +69,13 @@ public class LikeSongService {
         Song song = songRepository.findById(songId)
                 .orElseThrow(() -> new AppException(ErrorCode.SONG_NOT_FOUND));
 
-//        LikeSong like = LikeSong.builder()
-//                .user(user)
-//                .song(song)
-//                .build();
-//        return likeSongMapper.toLikeSongResponse(likeSongRepository.save(like));
-
         LikeSong like = new LikeSong(user, song);//Hạn chế buider vì tốn tài nguyên
         likeSongRepository.save(like);
 
-        song.setLikeCount(song.getLikeCount() + 1);
-        songRepository.save(song);
+//        song.setLikeCount(song.getLikeCount() + 1); //Nếu viết như vậy sẽ gây lỗi race condition (nhiều người ấn like cùng 1 lần)
+//        songRepository.save(song);
+
+        songRepository.incrementLikeCount(songId);
     }
 
     @Transactional //delete phải có transactional mới hoạt động
@@ -87,18 +84,17 @@ public class LikeSongService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        Song song = songRepository.findById(songId)
-                .orElseThrow(() -> new AppException(ErrorCode.SONG_NOT_FOUND));
+        if (!songRepository.existsById(songId)){ //Kiểm tra bài hát có tồn tại không
+            throw new AppException(ErrorCode.SONG_NOT_FOUND);
+        }
 
-        if (!likeSongRepository.existsByUser_IdAndSong_Id(user.getId(), songId)){
+        if (!likeSongRepository.existsByUser_IdAndSong_Id(user.getId(), songId)){ //Kiểm tra đã like chứa
             throw new AppException(ErrorCode.NOT_LIKED_YET);
         }
 
         likeSongRepository.deleteByUser_IdAndSong_Id(user.getId(), songId);
 
-        Long current = song.getLikeCount() == null ? 0L : song.getLikeCount();
-        song.setLikeCount(current - 1);
-        songRepository.save(song);
+        songRepository.decrementLikeCount(songId);
     }
 
     public Page<TopLikeSongResponse> getTopLikedSongs(Pageable pageable){

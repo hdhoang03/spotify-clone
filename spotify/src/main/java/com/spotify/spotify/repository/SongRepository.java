@@ -34,4 +34,20 @@ public interface SongRepository extends JpaRepository<Song, String>, JpaSpecific
             )
     """)
     List<Song> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
+    @Modifying
+    @Query("""
+            UPDATE Song s
+            SET s.likeCount = COALESCE(s.likeCount, 0) + 1
+            WHERE s.id =:id
+            """)
+    void incrementLikeCount(@Param("id") String id);
+
+    @Modifying
+    @Query("""
+            UPDATE Song s
+            SET s.likeCount = COALESCE(s.likeCount, 0) - 1
+            WHERE s.id =:id AND s.likeCount > 0
+            """)
+    void decrementLikeCount(@Param("id") String id);
 }

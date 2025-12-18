@@ -37,7 +37,7 @@ public class PlaylistController {
                 .build();
     }
 
-    @GetMapping("/{userId}")
+    @GetMapping("/user/{userId}")
     ApiResponse<Page<PlaylistResponse>> getUserPublicPlaylist(@PathVariable String userId,
                                                               @RequestParam(defaultValue = "1") int page,
                                                               @RequestParam(defaultValue = "10") int size){
@@ -76,7 +76,7 @@ public class PlaylistController {
                 .build();
     }
 
-    @PutMapping("/update/{playlistId}")
+    @PutMapping("/{playlistId}/update")
     ApiResponse<PlaylistResponse> updatePlaylist(@ModelAttribute PlaylistUpdateRequest request, @PathVariable String playlistId){
         return ApiResponse.<PlaylistResponse>builder()
                 .code(1000)
@@ -85,7 +85,7 @@ public class PlaylistController {
                 .build();
     }
 
-    @DeleteMapping("/delete/{playlistId}")
+    @DeleteMapping("/{playlistId}/delete")
     ApiResponse<Void> deletePlaylist(@PathVariable String playlistId){
         playlistService.deletePlaylist(playlistId);
         return ApiResponse.<Void>builder()

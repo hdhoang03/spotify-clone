@@ -6,10 +6,8 @@ import com.spotify.spotify.dto.response.PlaylistResponse;
 import com.spotify.spotify.dto.response.UserSummaryResponse;
 import com.spotify.spotify.entity.Playlist;
 import com.spotify.spotify.entity.User;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
-import org.mapstruct.NullValuePropertyMappingStrategy;
+import jdk.jfr.Name;
+import org.mapstruct.*;
 
 @Mapper(componentModel = "spring",
         uses = {SongMapper.class},
@@ -20,10 +18,17 @@ public interface PlaylistMapper {
     @Mapping(target = "songs", ignore = true)//Tạo playlist mới để trống
     Playlist toPlaylist(PlaylistRequest request);
 
-    @Mapping(target = "songCount", expression = "java(playlist.getSongs().size())")
+    @Named("toPlaylistSummary")
+//    @Mapping(target = "songs", ignore = true)
+    @Mapping(target = "songCount", expression = "java(playlist.getSongs() != null ? playlist.getSongs().size() : 0)")
     @Mapping(target = "user", expression = "java(toUserSummary(playlist.getUser()))")
     @Mapping(source = "createdAt", target = "createdAt")
     PlaylistResponse toPlaylistResponse(Playlist playlist);
+
+    @Name("toPlaylistDetail")
+    @Mapping(target = "user", expression = "java(toUserSummary(playlist.getUser()))")
+    @Mapping(target = "songCount", expression = "java(playlist.getSongs() != null ? playlist.getSongs().size() : 0)")
+    PlaylistResponse toPlaylistDetailResponse(Playlist playlist);
 
     default UserSummaryResponse toUserSummary(User user){
         if(user == null) return  null;
@@ -39,3 +44,4 @@ public interface PlaylistMapper {
     @Mapping(target = "user", ignore = true) //không cập nhật chủ playlist
     void updatePlaylist(@MappingTarget Playlist playlist, PlaylistUpdateRequest request);
 }
+//getSongs().size() vẫn có thể gây Lazy Exception nếu không FETCH

@@ -1,6 +1,7 @@
 package com.spotify.spotify.mapper;
 
 import com.spotify.spotify.dto.request.CategoryRequest;
+import com.spotify.spotify.dto.request.CategoryUpdateRequest;
 import com.spotify.spotify.dto.response.CategoryResponse;
 import com.spotify.spotify.dto.response.SongResponse;
 import com.spotify.spotify.entity.Category;
@@ -14,7 +15,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-12-13T09:48:05+0700",
+    date = "2025-12-17T00:32:08+0700",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 21.0.5 (Oracle Corporation)"
 )
 @Component
@@ -55,13 +56,16 @@ public class CategoryMapperImpl implements CategoryMapper {
     }
 
     @Override
-    public void updateCategory(Category category, CategoryRequest request) {
+    public void updateCategory(Category category, CategoryUpdateRequest request) {
         if ( request == null ) {
             return;
         }
 
         category.setName( request.getName() );
         category.setDescription( request.getDescription() );
+        if ( request.getActive() != null ) {
+            category.setActive( request.getActive() );
+        }
     }
 
     protected List<SongResponse> songSetToSongResponseList(Set<Song> set) {

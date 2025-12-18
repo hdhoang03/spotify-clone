@@ -66,7 +66,7 @@ public class LikeSongController {
                 .build();
     }
 
-    @PostMapping("/unlike/{songId}")
+    @PostMapping("/{songId}/unlike")
     ApiResponse<Void> unlikeSong(@PathVariable String songId){
         likeSongService.unlikeSong(songId);
         return ApiResponse.<Void>builder()

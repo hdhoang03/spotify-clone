@@ -77,7 +77,7 @@ public class ArtistFollowService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        if (!Boolean.TRUE.equals(user.getIsPublicProfile())){//nếu null -> false
+        if (!Boolean.TRUE.equals(user.isPublicProfile())){//nếu null -> false
             throw new AppException(ErrorCode.USER_PROFILE_PRIVATE);
         }
         return artistFollowRepository.findFollowedArtistByUserId(userId, pageable)

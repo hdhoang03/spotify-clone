@@ -36,6 +36,10 @@ public enum ErrorCode {
     CANNOT_DELETE_DEFAULT_CATEGORY(1021, "Can't delete default category", HttpStatus.BAD_REQUEST),
     SONG_ALREADY_IN_PLAYLIST(1022, "Song already in playlist", HttpStatus.BAD_REQUEST),
     SONG_NOT_IN_PLAYLIST(1023, "Song not in this playlist, try again", HttpStatus.BAD_REQUEST),
+    EMAIL_SEND_FAILED(1024, "Email send failed", HttpStatus.BAD_REQUEST),
+    OTP_EXPIRED(1025, "Otp expired", HttpStatus.BAD_REQUEST),
+    OTP_INVALID(1026, "Otp invalid", HttpStatus.BAD_REQUEST),
+    PASSWORD_INCORRECT(1027, "Password incorrect", HttpStatus.BAD_REQUEST),
     ;
     int code;
     String message;

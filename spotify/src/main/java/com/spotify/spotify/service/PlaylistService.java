@@ -94,7 +94,7 @@ public class PlaylistService {
 
         if (!Boolean.TRUE.equals(playlist.getIsPublic())){
             var auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth != null || !auth.isAuthenticated() || !playlist.getUser().getUsername().equals(auth.getName())){
+            if (auth == null || !auth.isAuthenticated() || !playlist.getUser().getUsername().equals(auth.getName())){
                 throw new AppException(ErrorCode.UNAUTHENTICATED);//Nếu isPublic = false thì không phải chủ không xem được
             }
         }
@@ -144,7 +144,7 @@ public class PlaylistService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         return playlistRepository.findByUserId(user.getId(), pageable)
-                .map(playlistMapper::toPlaylistResponse);
+                .map(playlistMapper::toPlaylistDetailResponse);
     }
 
     private Playlist getPlayListAndCheckOwnership(String playlistId){

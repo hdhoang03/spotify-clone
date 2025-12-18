@@ -19,6 +19,9 @@ public interface SongMapper {
     @Mapping(target = "category", ignore = true)
     @Mapping(target = "playCount", ignore = true)
     @Mapping(target = "likeCount", ignore = true)
+    @Mapping(target = "streams", ignore = true)
+    @Mapping(target = "likes", ignore = true)
+    @Mapping(target = "uploadedBy", ignore = true)
     Song toSong(SongRequest request);
 
     //dot notation "album.name" có khả năng null pointer nên dùng custom method
@@ -48,12 +51,14 @@ public interface SongMapper {
         return artist != null ? artist.getName() : null;
     }
 
-    default Artist map(String artistName){
-        if (artistName == null) return null;
-        Artist artist = new Artist();
-        artist.setName(artistName);
-        return artist;
-    }
+    //Sử dụng hàm này thay vì tự sinh code để kiểm tra null, ví dụ bài hát 0 thuộc album nào sẽ không bị lỗi 500
+    //Hàm này nguy hiểm
+//    default Artist map(String artistName){
+//        if (artistName == null) return null;
+//        Artist artist = new Artist();
+//        artist.setName(artistName);
+//        return artist;
+//    }
 
     @Named("mapAlbumName")
     default String mapAlbumName(Album album){

@@ -10,6 +10,7 @@ import com.spotify.spotify.service.ArtistFollowService;
 import com.spotify.spotify.service.UserService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Setter
 @RestController
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -62,12 +64,12 @@ public class UserController {
     }
 
     @PutMapping("/profile/privacy")
-    ApiResponse<UserResponse> togglePrivacy(@RequestParam boolean isPublic){
+    ApiResponse<Void> togglePrivacy(@RequestParam Boolean isPublic){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        return ApiResponse.<UserResponse>builder()
+        userService.togglePrivacy(username, isPublic);
+        return ApiResponse.<Void>builder()
                 .code(1000)
                 .message(isPublic ? "Profile set to public." : "Profile set to private.")
-                .result(userService.togglePrivacy(username, isPublic))
                 .build();
     }
 

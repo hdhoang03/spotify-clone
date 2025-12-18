@@ -21,15 +21,6 @@ public interface SongStreamRepository extends JpaRepository<SongStream, String> 
     Boolean existsByUser_IdAndSong_Id(String userId, String songId);//Kiểm tra user nghe đúng bài đó chưa
 
     @Query("""
-            SELECT s
-            FROM SongStream s
-            WHERE s.song.id = :songId AND s.createdAt BETWEEN :start AND :end
-    """)
-    List<SongStream> findStreamsWithinRange(@Param("songId") String songId,
-                                            @Param("start")LocalDate start,
-                                            @Param("end") LocalDate end); //Thống kê biểu đồ lượt nghe theo tuần
-
-    @Query("""
             SELECT new com.spotify.spotify.dto.response.StreamStatResponse(
                 CAST(s.createdAt AS LocalDate), COUNT(s)
             )

@@ -21,4 +21,5 @@ public class UserResponse {
     LocalDate dob;
     Boolean enabled;
     Set<RoleResponse> roles;
+    boolean isPublicProfile;
 }
