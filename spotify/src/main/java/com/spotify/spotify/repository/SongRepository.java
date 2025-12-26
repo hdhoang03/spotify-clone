@@ -16,8 +16,12 @@ import java.util.Optional;
 @Repository
 public interface SongRepository extends JpaRepository<Song, String>, JpaSpecificationExecutor<Song> {
     @Modifying
+    @Query("UPDATE Song s SET s.playCount = s.playCount + :amount WHERE s.id = :id")
+    void incrementPlayCountAmount(@Param("id") String id, @Param("amount") Long amount); //Cộng n lần cùng lúc
+
+    @Modifying
     @Query("UPDATE Song s SET s.playCount = s.playCount + 1 WHERE s.id = :id")
-    int incrementPlayCount(@Param("id") String id);
+    int incrementPlayCount(@Param("id") String id); //Cộng 1
 
     List<Song> findByArtist_Id(String artistId);
     Page<Song> findByTitleContainingIgnoreCaseAndDeletedFalse(String keyword, Pageable pageable);

@@ -2,8 +2,7 @@ package com.spotify.spotify.dto.response;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -15,5 +14,5 @@ public class SongStreamResponse {
     String streamId; //Id lượt nghe
     String userId;
     String songId;
-    LocalDate createdAt;
+    LocalDateTime createdAt;
 }

@@ -30,6 +30,7 @@ public enum ErrorCode {
     USER_PROFILE_PRIVATE(1014, "User profile's is private", HttpStatus.NOT_FOUND),
     PLAY_LIST_NOT_FOUND(1015, "Playlist not found", HttpStatus.NOT_FOUND),
     STREAM_TOO_SHORT(1016, "Stream too short to create", HttpStatus.BAD_REQUEST),
+    STREAM_TOO_FAST_DETECTED(1028, "Stream too fast detected", HttpStatus.BAD_REQUEST),
     NOT_LIKED_YET(1017, "Song hasn't liked yet", HttpStatus.NOT_FOUND),
     ALREADY_LIKED(1018, "Song already liked", HttpStatus.ACCEPTED),
     SONG_ARTIST_MISMATCH(1019, "Song does not belong to the album's artist", HttpStatus.BAD_REQUEST),

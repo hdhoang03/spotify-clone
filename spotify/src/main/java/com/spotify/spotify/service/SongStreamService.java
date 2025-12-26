@@ -9,6 +9,7 @@ import com.spotify.spotify.entity.SongStream;
 import com.spotify.spotify.entity.User;
 import com.spotify.spotify.exception.AppException;
 import com.spotify.spotify.exception.ErrorCode;
+import com.spotify.spotify.kafka.KafkaProducerService;
 import com.spotify.spotify.mapper.SongStreamMapper;
 import com.spotify.spotify.repository.SongRepository;
 import com.spotify.spotify.repository.SongStreamRepository;
@@ -20,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +31,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -39,20 +42,45 @@ public class SongStreamService {
     SongStreamRepository songStreamRepository;
     SongRepository songRepository;
     UserRepository userRepository;
+    RedisTemplate<String, Object> redisTemplate;
+    KafkaProducerService kafkaProducerService;
+
+    static String PLAY_BUFFER_KEY = "song_play_buffer";
+    static String PLAY_COOLDOWN_KEY_FORMAT = "play_cooldown:%s:%s";
 
     @Transactional //Query là phải có transactional
     public void increasePlayCount(String songId){ //Tăng lượt play_count của bài hát
         if (!songRepository.existsById(songId)){
             throw new AppException(ErrorCode.SONG_NOT_FOUND);
         }
-        songRepository.incrementPlayCount(songId);
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        String cooldownKey = String.format(PLAY_COOLDOWN_KEY_FORMAT, songId, username);
+        Boolean isValidClick = redisTemplate.opsForValue()
+                        .setIfAbsent(cooldownKey, "1", 10, TimeUnit.SECONDS);
+
+        if(Boolean.TRUE.equals(isValidClick)){
+//            redisTemplate.opsForHash().increment(PLAY_BUFFER_KEY, songId, 1);
+            kafkaProducerService.sendMessage("play_count", songId);
+            log.info("Buffered play count for song: {}", songId);
+        } else {
+            log.debug("Spm click detected from user {} on song {}", username, songId);
+        }
+
+//        songRepository.incrementPlayCount(songId);
+        //Việc tăng view bây giờ do Consumer làm, Service này chỉ bắn tin rồi thôi.
+        //Nếu để dòng này lại, User sẽ phải chờ DB update xong mới nhận được phản hồi -> Chậm.
     }
 
     @Transactional //Toàn vẹn dữ liệu khi save
     public SongStreamResponse createStream(SongStreamRequest request){ //Tạo 1 lượt stream nếu nghe bài hát trên 30 với userid và songid đó
-        //Valid logic 30s
-        if (request.getDuration() != null && request.getDuration() < 30){
+        double currentDuration = request.getDuration() * request.getSpeed();
+        long minRealTimeSeconds = 20L; //Định nghĩa thời gian sàn tối thiểu (để chống tool click quá nhanh)
+
+        if (request.getDuration() != null && currentDuration < 30){//Valid logic 30s
             throw new AppException(ErrorCode.STREAM_TOO_SHORT);//return null cũng được
+        }
+        if (request.getDuration() < minRealTimeSeconds){
+            throw new AppException(ErrorCode.STREAM_TOO_FAST_DETECTED);
         }
 
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -80,7 +108,7 @@ public class SongStreamService {
         stream.setSong(song);
 
         if (stream.getDuration() == null){
-            stream.setDuration(30L);//30s
+            stream.setDuration(request.getDuration());
         }
         log.debug("User {} streamed song {} length {}", user.getId(), song.getId(), stream.getDuration());
         return songStreamMapper.toSongStreamResponse(songStreamRepository.save(stream));

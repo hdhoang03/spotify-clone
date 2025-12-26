@@ -32,6 +32,8 @@ public class AuthenticationController {
                 .build();
     }
 
+    //thêm resend otp
+
     @PostMapping("/verify")
     ApiResponse<AuthenticationResponse> verify(@RequestBody VerifyOtpRequest request){
         var auth = authenticationService.verifyAndCreateUser(request.getEmail(), request.getOtpCode());

@@ -39,6 +39,7 @@ public class SecurityConfig {
             "/stream/count/**", "/stream/range/**",
             "/like/top",
             "/search",
+            "/api/test-kafka"
     };
 
     @Bean

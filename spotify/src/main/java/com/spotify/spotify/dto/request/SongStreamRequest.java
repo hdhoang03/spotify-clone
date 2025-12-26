@@ -16,6 +16,8 @@ public class SongStreamRequest {
     String songId;
 
     @NotNull(message = "DURATION_REQUIRED")
-    @Min(value = 30, message = "DURATION_TOO_SHORT")
     Long duration; //optional
+
+    @Builder.Default
+    Double speed = 1.0;
 }

@@ -1,32 +1,200 @@
+<!--<!DOCTYPE html>-->
+<!--<html xmlns:th="http://www.thymeleaf.org">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+<!--    <title>Xác thực tài khoản</title>-->
+<!--    <style>-->
+<!--        body {-->
+<!--            margin: 0; padding: 0;-->
+<!--            background-color: #f9f9f9;-->
+<!--            font-family: 'Lexend', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;-->
+<!--            -webkit-font-smoothing: antialiased;-->
+<!--        }-->
+<!--        .container {-->
+<!--            max-width: 500px;-->
+<!--            margin: 40px auto;-->
+<!--            background: #ffffff;-->
+<!--            border-radius: 24px;-->
+<!--            overflow: hidden;-->
+<!--            box-shadow: 0 4px 20px rgba(0,0,0,0.05);-->
+<!--        }-->
+<!--        .content {-->
+<!--            padding: 40px;-->
+<!--            text-align: center;-->
+<!--        }-->
+
+<!--        .logo { -->
+<!--            font-size: 22px; -->
+<!--            font-weight: 800; color: #1DB954; -->
+<!--            letter-spacing: -1px; margin-bottom: 30px; -->
+<!--            display: block; -->
+<!--            text-decoration: none; -->
+<!--        }-->
+
+<!--        h1 { -->
+<!--            color: #191414; -->
+<!--            font-size: 28px; -->
+<!--            font-weight: 800; -->
+<!--            margin-bottom: 10px; -->
+<!--            letter-spacing: -0.5px; -->
+<!--        }-->
+<!--        p { -->
+<!--            color: #6a6a6a; -->
+<!--            font-size: 15px; -->
+<!--            line-height: 1.6; -->
+<!--            margin-bottom: 25px; -->
+<!--        }-->
+
+<!--        /* Hiệu ứng mã OTP hiện đại */-->
+<!--        .otp-container { background-color: #f4f4f4; border-radius: 16px; padding: 30px; margin: 30px 0; }-->
+<!--        .otp-label { font-size: 12px; text-transform: uppercase; color: #999; font-weight: 700; letter-spacing: 1px; margin-bottom: 10px; }-->
+<!--        .otp-code { font-size: 42px; font-weight: 800; color: #1DB954; letter-spacing: 6px; margin: 0; }-->
+
+<!--        .timer-warning { display: inline-block; background: #fff1f0; color: #eb2f96; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; }-->
+
+<!--        .footer { padding: 30px; text-align: center; font-size: 12px; color: #b3b3b3; background: #fafafa; }-->
+<!--        .social-link { color: #1DB954; text-decoration: none; font-weight: 600; }-->
+
+<!--        @media (max-width: 600px) {-->
+<!--            .container { margin: 0; border-radius: 0; }-->
+<!--            .content { padding: 30px 20px; }-->
+<!--        }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+<!--<div class="container">-->
+<!--    <div class="content">-->
+<!--        <a href="#" class="logo">Spotify<span style="color: #191414;">Clone</span></a>-->
+
+<!--        <h1>Xác thực danh tính</h1>-->
+<!--        <p>Hey <span th:text="${name}" style="color: #191414; font-weight: 600;">User</span>! Để đảm bảo an toàn, hãy sử dụng mã dưới đây để tiếp tục trải nghiệm âm nhạc nhé.</p>-->
+
+<!--        <div class="otp-container">-->
+<!--            <div class="otp-label">Mã xác thực của bạn</div>-->
+<!--            <div class="otp-code" th:text="${otp}">123456</div>-->
+<!--        </div>-->
+
+<!--        <div class="timer-warning">-->
+<!--            Hiệu lực trong 5 phút-->
+<!--        </div>-->
+
+<!--        <p style="margin-top: 30px; font-size: 13px;">-->
+<!--            Đừng chia sẻ mã này cho bất kỳ ai. <br>-->
+<!--            Nếu không phải bạn yêu cầu, hãy cứ yên tâm bỏ qua email này.-->
+<!--        </p>-->
+<!--    </div>-->
+
+<!--    <div class="footer">-->
+<!--        <p style="margin-bottom: 10px;">&copy; 2025 Spotify Clone Project. Made with 💚</p>-->
+<!--        <p>Bạn nhận được mail này vì đã yêu cầu đăng ký tài khoản.</p>-->
+<!--    </div>-->
+<!--</div>-->
+<!--</body>-->
+<!--</html>-->
+
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Xác thực tài khoản</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;600;800&display=swap" rel="stylesheet">
+
     <style>
-        body { margin: 0; padding: 0; background-color: #f9f9f9; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
-        .container { max-width: 500px; margin: 40px auto; background: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
-        .content { padding: 40px; text-align: center; }
+        body {
+            margin: 0; padding: 0;
+            background-color: #f9f9f9;
+            /* Thiết lập Lexend là font ưu tiên hàng đầu */
+            font-family: 'Lexend', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            max-width: 500px;
+            margin: 40px auto;
+            background: #ffffff;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+        }
+        .content {
+            padding: 40px;
+            text-align: center;
+        }
 
-        .logo { font-size: 22px; font-weight: 800; color: #1DB954; letter-spacing: -1px; margin-bottom: 30px; display: block; text-decoration: none; }
+        .logo {
+            font-size: 24px;
+            font-weight: 800;
+            color: #1DB954;
+            letter-spacing: -1px;
+            margin-bottom: 30px;
+            display: block;
+            text-decoration: none;
+        }
 
-        h1 { color: #191414; font-size: 28px; font-weight: 800; margin-bottom: 10px; letter-spacing: -0.5px; }
-        p { color: #6a6a6a; font-size: 15px; line-height: 1.6; margin-bottom: 25px; }
+        h1 {
+            color: #191414;
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            letter-spacing: -1px; /* Lexend đẹp hơn khi tracking hẹp lại một chút ở tiêu đề */
+        }
+        p {
+            color: #535353;
+            font-size: 15px;
+            font-weight: 400;
+            line-height: 1.7;
+            margin-bottom: 25px;
+        }
 
-        /* Hiệu ứng mã OTP hiện đại */
-        .otp-container { background-color: #f4f4f4; border-radius: 16px; padding: 30px; margin: 30px 0; }
-        .otp-label { font-size: 12px; text-transform: uppercase; color: #999; font-weight: 700; letter-spacing: 1px; margin-bottom: 10px; }
-        .otp-code { font-size: 42px; font-weight: 800; color: #1DB954; letter-spacing: 6px; margin: 0; }
+        .otp-container {
+            background-color: #F8F8F8;
+            border-radius: 20px;
+            padding: 35px 20px;
+            margin: 30px 0;
+            border: 1px solid #eeeeee;
+        }
+        .otp-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #919191;
+            font-weight: 600;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+        }
+        .otp-code {
+            font-size: 48px;
+            font-weight: 800;
+            color: #1DB954;
+            letter-spacing: 8px;
+            margin: 0;
+            /* Đảm bảo số hiển thị đẹp với Lexend */
+            font-variant-numeric: tabular-nums;
+        }
 
-        .timer-warning { display: inline-block; background: #fff1f0; color: #eb2f96; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+        .timer-warning {
+            display: inline-block;
+            background: #fff1f0;
+            color: #eb2f96;
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+        }
 
-        .footer { padding: 30px; text-align: center; font-size: 12px; color: #b3b3b3; background: #fafafa; }
-        .social-link { color: #1DB954; text-decoration: none; font-weight: 600; }
+        .footer {
+            padding: 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #A7A7A7;
+            background: #ffffff;
+            border-top: 1px solid #f0f0f0;
+        }
 
         @media (max-width: 600px) {
-            .container { margin: 0; border-radius: 0; }
-            .content { padding: 30px 20px; }
+            .container { margin: 0; border-radius: 0; width: 100%; }
+            .content { padding: 40px 24px; }
+            h1 { font-size: 28px; }
         }
     </style>
 </head>
@@ -47,14 +215,14 @@
             Hiệu lực trong 5 phút
         </div>
 
-        <p style="margin-top: 30px; font-size: 13px;">
+        <p style="margin-top: 35px; font-size: 13px; color: #919191;">
             Đừng chia sẻ mã này cho bất kỳ ai. <br>
             Nếu không phải bạn yêu cầu, hãy cứ yên tâm bỏ qua email này.
         </p>
     </div>
 
     <div class="footer">
-        <p style="margin-bottom: 10px;">&copy; 2025 Spotify Clone Project. Made with 💚</p>
+        <p style="margin-bottom: 10px; font-weight: 600;">&copy; 2025 Spotify Clone Project. Made with 💚</p>
         <p>Bạn nhận được mail này vì đã yêu cầu đăng ký tài khoản.</p>
     </div>
 </div>

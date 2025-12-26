@@ -7,6 +7,7 @@ import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.spotify.spotify.constaint.PredefinedRole;
+import com.spotify.spotify.dto.event.NotificationEvent;
 import com.spotify.spotify.dto.request.*;
 import com.spotify.spotify.dto.response.AuthenticationResponse;
 import com.spotify.spotify.dto.response.IntrospectResponse;
@@ -15,6 +16,7 @@ import com.spotify.spotify.entity.Role;
 import com.spotify.spotify.entity.User;
 import com.spotify.spotify.exception.AppException;
 import com.spotify.spotify.exception.ErrorCode;
+import com.spotify.spotify.kafka.KafkaProducerService;
 import com.spotify.spotify.mapper.UserMapper;
 import com.spotify.spotify.repository.InvalidTokenRepository;
 import com.spotify.spotify.repository.RoleRepository;
@@ -50,6 +52,7 @@ public class AuthenticationService {
     UserMapper userMapper;
     RoleRepository roleRepository;
     ObjectMapper objectMapper;
+    KafkaProducerService kafkaProducerService;
 
     @NonFinal
     @Value("${jwt.signerKey}")
@@ -80,7 +83,16 @@ public class AuthenticationService {
         data.put("otp", otp);
 
         redisTemplate.opsForValue().set(redisKey, data, 5, TimeUnit.MINUTES);
-        emailService.sendHtmlEmail(request.getEmail(), "Account verification", "email-otp", Map.of("name", request.getUsername(), "otp", otp));
+//        emailService.sendHtmlEmail(request.getEmail(), "Account verification", "email-otp", Map.of("name", request.getUsername(), "otp", otp));
+        NotificationEvent notificationEvent = NotificationEvent.builder()
+                .channel("EMAIL")
+                .recipient(request.getEmail())
+                .template("email-otp")
+                .subject("Account verification")
+                .param(Map.of("name", request.getUsername(), "otp", otp))
+                .build();
+
+        kafkaProducerService.sendMessage("notification_topic", notificationEvent);//Gửi object và topic
     }
 
     public AuthenticationResponse verifyAndCreateUser(String email, String otpCode){
@@ -101,9 +113,13 @@ public class AuthenticationService {
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
-        HashSet<Role> roles = new HashSet<>();
-        roleRepository.findById(PredefinedRole.USER_ROLE).ifPresent(roles::add);
-        user.setRoles(roles);
+//        HashSet<Role> roles = new HashSet<>();
+//        roleRepository.findById(PredefinedRole.USER_ROLE).ifPresent(roles::add);
+//        user.setRoles(roles);
+        var userRole = roleRepository.findById(PredefinedRole.USER_ROLE).orElse(null);
+        if(userRole != null){
+            user.setRoles(new HashSet<>(Collections.singletonList(userRole)));
+        }
         user.setEnabled(true);
 
         userRepository.save(user);
@@ -139,8 +155,17 @@ public class AuthenticationService {
 
         redisTemplate.opsForValue().set(redisKey, otp, 5, TimeUnit.MINUTES);
 
-        emailService.sendHtmlEmail(user.getEmail(), "Reset password OTP", "email-otp",
-                Map.of("name", user.getUsername(), "otp", otp));
+//        emailService.sendHtmlEmail(user.getEmail(), "Reset password OTP", "email-otp",
+//                Map.of("name", user.getUsername(), "otp", otp));
+        NotificationEvent event = NotificationEvent.builder()
+                .channel("EMAIL")
+                .recipient(user.getEmail())
+                .subject("Reset password OTP")
+                .template("email-otp")
+                .param(Map.of("name", user.getUsername(), "otp", otp))
+                .build();
+
+        kafkaProducerService.sendMessage("notification_topic", event);
     }
 
     public void resetPassword(ResetPasswordRequest request){

@@ -35,6 +35,12 @@ spring:
           timeout: 5000
           writetimeout: 5000
 
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: springtunes-group
+      auto-offset-reset: earliest
+
 jwt:
   signerKey: "b2yoP+BXkNpTkT3UA7TSAHxqoLxuzgZIRmscynx2zbm5PHbtt3U+JB5N1G6AIrNg"
   valid-duration: 3600
