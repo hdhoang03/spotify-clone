@@ -70,6 +70,16 @@ public class Song {
         this.updatedAt = LocalDateTime.now();
     }
 
+    //Thêm mới: Danh sách nghệ sĩ kết hợp ngày 6/1/2026
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "song_performers",
+        joinColumns = @JoinColumn(name = "song_id"),
+        inverseJoinColumns = @JoinColumn(name = "artist_id"")
+    )
+    @Builder.Default
+    Set<Artist> featuredArtists = new HashSet<>();
+
     //Để remove song hoạt động
 //    @Override
 //    public boolean equals(Object o){
