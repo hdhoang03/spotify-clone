@@ -15,4 +15,5 @@ public class AlbumResponse {
     String description;
     String avatarUrl;//có gì sửa sau
 //    Set<SongResponse> songs;
+    //Mapping thêm thồng tin nghệ sĩ (avatar và tên)
 }
