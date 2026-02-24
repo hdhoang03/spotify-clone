@@ -7,8 +7,11 @@ import com.spotify.spotify.entity.Artist;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 
-@Mapper(componentModel = "spring", uses = SongMapper.class)
+@Mapper(componentModel = "spring", uses = SongMapper.class,
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+
 public interface ArtistMapper {
     @Mapping(target = "avatarUrl", ignore = true)
     Artist toArtist(ArtistRequest request);

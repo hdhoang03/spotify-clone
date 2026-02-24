@@ -51,11 +51,13 @@ public class SongController {
     }
 
     @GetMapping("/allSongs")
-    ApiResponse<List<SongResponse>> getAllSongs(){
-        return ApiResponse.<List<SongResponse>>builder()
+    ApiResponse<Page<SongResponse>> getAllSongs(@RequestParam(defaultValue = "1") int page,
+                                                @RequestParam(defaultValue = "10") int size
+        ){
+        return ApiResponse.<Page<SongResponse>>builder()
                 .code(1000)
                 .message("All songs are fetched!")
-                .result(songService.getAllSongs())
+                .result(songService.getAllSongs(PageRequest.of(page - 1, size)))
                 .build();
     }
 
@@ -111,12 +113,30 @@ public class SongController {
                 .build();
     }
 
-    @DeleteMapping("/delete/{id}")
-    ApiResponse<Void> deleteSong(@PathVariable String id){
-        songService.deleteSong(id);
+    @DeleteMapping("/force-delete/{id}")
+    ApiResponse<Void> forceDeleteSong(@PathVariable String id){
+        songService.forceDeleteSong(id);
         return ApiResponse.<Void>builder()
                 .code(1000)
-                .message("Song has been deleted!")
+                .message("Song has been permanently deleted.")
+                .build();
+    }
+
+    @DeleteMapping("/delete/{id}")
+    ApiResponse<Void> deleteSong(@PathVariable String id){
+        songService.softDeleteSong(id);
+        return ApiResponse.<Void>builder()
+                .code(1000)
+                .message("Song has been deleted.")
+                .build();
+    }
+
+    @PatchMapping("/restore/{id}")
+    ApiResponse<Void> restoreSong(@PathVariable String id){
+        songService.restoreSong(id);
+        return ApiResponse.<Void>builder()
+                .code(1000)
+                .message("Song has been restored.")
                 .build();
     }
 
@@ -126,6 +146,7 @@ public class SongController {
             @RequestParam(required = false) String artist,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) Integer year,
+            @RequestParam(defaultValue = "false") boolean isDeleted,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size
     ){
@@ -134,7 +155,7 @@ public class SongController {
         return ApiResponse.<Page<SongResponse>>builder()
                 .code(1000)
                 .message("Search results")
-                .result(songService.searchSongs(keyword, artist, category, year, pageable))
+                .result(songService.searchSongs(keyword, artist, category, year, isDeleted, pageable))
                 .build();
     }
 }

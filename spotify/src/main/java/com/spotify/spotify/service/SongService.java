@@ -21,6 +21,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import jakarta.persistence.criteria.JoinType;
 
@@ -43,7 +44,6 @@ public class SongService {
     SongRepository songRepository;
     AlbumRepository albumRepository;
     ArtistRepository artistRepository;
-    CategoryRepository categoryRepository;
     SongMapper songMapper;
     Cloudinary cloudinary;
 
@@ -131,14 +131,13 @@ public class SongService {
     }
 
     public Page<SongResponse> searchSongsByTitle(String keyword, Pageable pageable){
-        return songRepository.findByTitleContainingIgnoreCaseAndDeletedFalse(keyword, pageable)
+        return songRepository.searchActiveSongByTitle(keyword, pageable)
                 .map(songMapper::toSongResponse);
     }
 
-    public List<SongResponse> getAllSongs(){
-        return songRepository.findAll().stream()
-                .map(songMapper::toSongResponse)
-                .toList();
+    public Page<SongResponse> getAllSongs(Pageable pageable){
+        return songRepository.findAllActiveSongs(pageable)
+                .map(songMapper::toSongResponse);
     }
 
     public Page<SongResponse> getSongsByAlbum(String albumId, Pageable pageable){
@@ -165,16 +164,43 @@ public class SongService {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    public void deleteSong(String id){
+    public void softDeleteSong(String id){
         Song song = songRepository.findById(id)
                         .orElseThrow(() -> new AppException(ErrorCode.SONG_NOT_FOUND));
-        songRepository.delete(song);
-        deleteFileCloud(song.getAudioUrl(), "video");
-        deleteFileCloud(song.getCoverUrl(), "image");
+        if (song.isDeleted()) return;
+        song.setDeleted(true);
+        songRepository.save(song);
     }
 
-    public Page<SongResponse> searchSongs(String keyword, String artist, String category, Integer year, Pageable pageable){
+    @PreAuthorize("hasRole('ADMIN')")
+    public void restoreSong(String id){
+        Song song = songRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.SONG_NOT_FOUND));
+
+        if(!song.isDeleted()) return;
+        song.setDeleted(false);
+        songRepository.save(song);
+    }
+
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public void forceDeleteSong(String id){
+        Song song = songRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.SONG_NOT_FOUND));
+        if (song.getAudioUrl() != null){
+            deleteFileCloud(song.getAudioUrl(), "video");
+        }
+         if (song.getCoverUrl() != null){
+            deleteFileCloud(song.getCoverUrl(), "image");
+         }
+
+         songRepository.delete(song);
+    }
+
+    public Page<SongResponse> searchSongs(String keyword, String artist, String category, Integer year, boolean isDeleted, Pageable pageable){
         Specification<Song> spec = (root, query, criteriaBuilder) -> criteriaBuilder.conjunction();
+
+        spec = spec.and((root, query, cb) -> cb.equal(root.get("deleted"), isDeleted));
 
         if (keyword != null && !keyword.isEmpty()){
             spec = spec.and((root, query, criteriaBuilder) ->

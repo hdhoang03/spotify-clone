@@ -41,6 +41,9 @@ public enum ErrorCode {
     OTP_EXPIRED(1025, "Otp expired", HttpStatus.BAD_REQUEST),
     OTP_INVALID(1026, "Otp invalid", HttpStatus.BAD_REQUEST),
     PASSWORD_INCORRECT(1027, "Password incorrect", HttpStatus.BAD_REQUEST),
+    IS_ADMIN(1028, "This is admin account, you can't change status", HttpStatus.BAD_REQUEST),
+    SONG_BELONGS_TO_ANOTHER_ALBUM(1029, "Song belongs to another album", HttpStatus.BAD_REQUEST),
+    INVALID_REQUEST(1030, "Invalid request", HttpStatus.BAD_REQUEST),
     ;
     int code;
     String message;

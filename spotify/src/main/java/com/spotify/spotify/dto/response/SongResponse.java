@@ -2,6 +2,8 @@ package com.spotify.spotify.dto.response;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -21,4 +23,5 @@ public class SongResponse {
     String uploadedBy;
     Double duration; //mới thêm
     LocalDateTime createdAt;
+    LocalDate releaseDate;
 }

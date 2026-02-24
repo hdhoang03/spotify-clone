@@ -2,6 +2,8 @@ package com.spotify.spotify.dto.response;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+
+import java.time.LocalDate;
 import java.util.Set;
 
 @Data
@@ -14,6 +16,9 @@ public class AlbumResponse {
     String name;
     String description;
     String avatarUrl;//có gì sửa sau
+    Integer songCount;
+    String artistName;
+    LocalDate releaseDate;
 //    Set<SongResponse> songs;
     //Mapping thêm thồng tin nghệ sĩ (avatar và tên)
 }

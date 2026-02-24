@@ -34,15 +34,15 @@ public class ArtistController {
                 .build();
     }
 
-    @GetMapping("/all")
-    ApiResponse<Page<ArtistResponse>> getAllArtists(@RequestParam(defaultValue = "1") int page,
-                                                    @RequestParam(defaultValue = "10") int size){
-        return ApiResponse.<Page<ArtistResponse>>builder()
-                .code(1000)
-                .message("All artists are fetched!")
-                .result(artistService.getAllArtists(PageRequest.of(page - 1, size, Sort.by("name").ascending())))
-                .build();
-    }
+//    @GetMapping("/all")
+//    ApiResponse<Page<ArtistResponse>> getAllArtists(@RequestParam(defaultValue = "1") int page,
+//                                                    @RequestParam(defaultValue = "10") int size){
+//        return ApiResponse.<Page<ArtistResponse>>builder()
+//                .code(1000)
+//                .message("All artists are fetched!")
+//                .result(artistService.getAllArtists(PageRequest.of(page - 1, size, Sort.by("name").ascending())))
+//                .build();
+//    }
 
     @GetMapping("/albums/{artistId}")//Do sai tên biến @PathVariable là albumId
     ApiResponse<List<AlbumResponse>> getAlbumsByArtist(@PathVariable String artistId){
@@ -63,20 +63,21 @@ public class ArtistController {
                 .build();
     }
 
-    @GetMapping("/search")
-    ApiResponse<Page<ArtistResponse>> searchArtists(@RequestParam String keyword,
+    @GetMapping("/list")
+    ApiResponse<Page<ArtistResponse>> searchArtists(@RequestParam(defaultValue = "", required = false) String keyword,
                                                     @RequestParam(defaultValue = "1") int page,
-                                                    @RequestParam(defaultValue = "10") int size
+                                                    @RequestParam(defaultValue = "10") int size,
+                                                    @RequestParam(defaultValue = "false") boolean isDeleted
     ){
         return ApiResponse.<Page<ArtistResponse>>builder()
                 .code(1000)
                 .message("")
-                .result(artistService.searchArtists(keyword, PageRequest.of(page - 1, size)))
+                .result(artistService.searchArtists(keyword, isDeleted, PageRequest.of(page - 1, size)))
                 .build();
     }
 
     @PutMapping("/{id}/update")
-    ApiResponse<ArtistResponse> updateArtist(@PathVariable String id, ArtistRequest request){
+    ApiResponse<ArtistResponse> updateArtist(@PathVariable String id,@ModelAttribute ArtistRequest request){
         ArtistResponse response = artistService.updateArtist(id, request);
         return ApiResponse.<ArtistResponse>builder()
                 .code(1000)

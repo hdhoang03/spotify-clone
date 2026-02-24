@@ -20,6 +20,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -85,11 +87,34 @@ public class UserService {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    public List<UserResponse> getUser(){
-        return userRepository.findAll()
-                .stream() //thay cho for
-                .map(userMapper::toUserResponse)
-                .toList();
+    public Page<UserResponse> searchUser(String keyword, Pageable pageable){
+        return (keyword != null && !keyword.isBlank()
+                ? userRepository.searchUsersMultiColumns(keyword, pageable)
+                : userRepository.findAll(pageable))
+                .map(userMapper::toUserResponse);
+    }
+
+    public UserResponse getMyInfo(){
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        return userMapper.toUserResponse(user);
+    }
+
+    public void toggleUserStatus(String userId){
+        User user = userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        boolean isAdmin = user.getRoles().stream()
+                .anyMatch(role -> role.getName().equals(PredefinedRole.ADMIN_ROLE));
+        if (isAdmin){
+            throw new AppException(ErrorCode.IS_ADMIN);
+        }
+
+        boolean currentStatus = user.getEnabled() != null ? user.getEnabled() : true;
+        user.setEnabled(!currentStatus);
+
+        userRepository.save(user);
     }
 
     public void togglePrivacy(String username, boolean isPublic){

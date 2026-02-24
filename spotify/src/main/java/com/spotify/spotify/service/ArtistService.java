@@ -58,10 +58,10 @@ public class ArtistService {
         return artistMapper.toArtistResponse(artist);
     }
 
-    public Page<ArtistResponse> getAllArtists(Pageable pageable){
-        return artistRepository.findAllByDeletedFalse(pageable)
-                .map(artistMapper::toArtistResponse);
-    }
+//    public Page<ArtistResponse> getAllArtists(Pageable pageable){
+//        return artistRepository.findAllByDeleted(pageable)
+//                .map(artistMapper::toArtistResponse);
+//    }
 
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
@@ -92,9 +92,9 @@ public class ArtistService {
 
         artist.setDeleted(true);
 
-        if (artist.getSongs() != null || !artist.getSongs().isEmpty()){
-            artist.getSongs().forEach(song -> song.setDeleted(true));
-        }
+//        if (artist.getSongs() != null || !artist.getSongs().isEmpty()){
+//            artist.getSongs().forEach(song -> song.setDeleted(true));
+//        }
 
         artistRepository.save(artist);
     }
@@ -109,9 +109,9 @@ public class ArtistService {
 
         artist.setDeleted(false);
 
-        if (artist.getSongs() != null && !artist.getSongs().isEmpty()){
-            artist.getSongs().forEach(song -> song.setDeleted(false));
-        }
+//        if (artist.getSongs() != null && !artist.getSongs().isEmpty()){
+//            artist.getSongs().forEach(song -> song.setDeleted(false));
+//        }
 
         artistRepository.save(artist);
     }
@@ -122,9 +122,16 @@ public class ArtistService {
         return artistMapper.toArtistResponse(artist);
     }
 
-    public Page<ArtistResponse> searchArtists(String keyword, Pageable pageable){
-        return artistRepository.findByNameContainingIgnoreCaseAndDeletedFalse(keyword, pageable)
-                .map(artistMapper::toArtistResponse);
+    public Page<ArtistResponse> searchArtists(String keyword, boolean isDeleted, Pageable pageable){
+        Page<ArtistRepository.ArtistWithSongCount> projections = (keyword != null && !keyword.isBlank()
+                ? artistRepository.searchWithSongCount(keyword, isDeleted, pageable)
+                : artistRepository.findAllWithSongCount(isDeleted, pageable));
+
+        return projections.map(projection -> {
+            ArtistResponse response = artistMapper.toArtistResponse(projection.getArtist());
+            response.setSongCount(projection.getSongCount() != null ? projection    .getSongCount().intValue() : 0);
+            return response;
+        });
     }
 
     private String saveFileCloud(MultipartFile file, String folder){

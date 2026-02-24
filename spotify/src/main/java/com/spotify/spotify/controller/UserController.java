@@ -1,5 +1,6 @@
 package com.spotify.spotify.controller;
 
+import com.cloudinary.Api;
 import com.spotify.spotify.dto.ApiResponse;
 import com.spotify.spotify.dto.request.UserCreationRequest;
 import com.spotify.spotify.dto.request.UserUpdateRequest;
@@ -14,6 +15,7 @@ import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,12 +38,31 @@ public class UserController {
                 .build();
     }
 
-    @GetMapping()
-    ApiResponse<List<UserResponse>> getListUser(){
-        return ApiResponse.<List<UserResponse>>builder()
+    @PutMapping("/toggle-status/{userId}")
+    ApiResponse<Void> toggleUserStatus(@PathVariable String userId){
+        userService.toggleUserStatus(userId);
+        return ApiResponse.<Void>builder()
                 .code(1000)
-                .message("All users has been fetched!")
-                .result(userService.getUser())
+                .message("User status has been updated!")
+                .build();
+    }
+
+    @GetMapping("/my")
+    ApiResponse<UserResponse> getMyInfo(){
+        return ApiResponse.<UserResponse>builder()
+                .code(1000)
+                .result(userService.getMyInfo())
+                .build();
+    }
+
+    @GetMapping("/list")
+    ApiResponse<Page<UserResponse>> getUser(@RequestParam(defaultValue = "", required = false) String keyword,
+                                            @RequestParam(defaultValue = "1") int page,
+                                            @RequestParam(defaultValue = "10") int size){
+        return ApiResponse.<Page<UserResponse>>builder()
+                .code(1000)
+                .message("Users have been fetched!")
+                .result(userService.searchUser(keyword, PageRequest.of(page - 1, size)))
                 .build();
     }
 

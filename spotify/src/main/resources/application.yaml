@@ -48,5 +48,5 @@ jwt:
 
 cloudinary:
   cloud-name: "dfsoeiui1"
-  api-key: ${KEY_CLOUD}
-  api-secret: ${SECRET_CLOUD}
+  api-key: ${KEY_CLOUD:734945962382533}
+  api-secret: ${SECRET_CLOUD:T0MGMwIJS7mDNpeB-IzkvmzwJ3U}

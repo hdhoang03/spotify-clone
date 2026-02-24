@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -53,6 +54,8 @@ public class Song {
     @Column(name = "is_deleted")
     @Builder.Default
     boolean deleted = false;
+
+    LocalDate releaseDate;
     
     @OneToMany(mappedBy = "song", cascade = CascadeType.REMOVE)
     Set<LikeSong> likes = new HashSet<>();

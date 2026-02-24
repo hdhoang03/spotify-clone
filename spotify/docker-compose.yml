@@ -1,26 +1,49 @@
-version: '3'
+version: '3.8'
+
 services:
+  # 1. Database: MySQL 8.0.45
+  mysql:
+    image: mysql:8.0.45-debian
+    container_name: mysql-spotify
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: spotify
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  # 2. Cache: Redis
+  redis:
+    image: redis:8.2.4-alpine
+    container_name: redis-spotify
+    restart: always
+    ports:
+      - "6379:6379"
+
+  # 3. Zookeeper (Bắt buộc cho Kafka)
   zookeeper:
-    # ĐỔI TỪ :latest SANG :7.4.0
     image: confluentinc/cp-zookeeper:7.4.0
-    container_name: springtunes-zookeeper
+    container_name: zookeeper-spotify
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
-    ports:
-      - 22181:2181
 
+  # 4. Message Broker: Kafka
   kafka:
     image: confluentinc/cp-kafka:7.4.0
-    container_name: springtunes-kafka
+    container_name: kafka-spotify
     depends_on:
       - zookeeper
     ports:
-      - 9092:9092
+      - "9092:9092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+# Định nghĩa volume để lưu trữ dữ liệu database ngay cả khi xóa container
+volumes:
+  mysql_data:

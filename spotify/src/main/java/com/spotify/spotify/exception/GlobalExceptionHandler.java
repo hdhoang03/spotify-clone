@@ -13,7 +13,7 @@ import java.nio.file.AccessDeniedException;
 @Slf4j
 public class GlobalExceptionHandler {
     @ExceptionHandler(value = Exception.class)
-    ResponseEntity<ApiResponse<?>> handlingRuntimeException(RuntimeException exception){
+    ResponseEntity<ApiResponse<?>> handlingRuntimeException(Exception exception){
         log.error("Unhandled exception: ", exception);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)

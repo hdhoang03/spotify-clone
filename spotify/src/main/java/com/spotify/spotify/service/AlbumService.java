@@ -68,6 +68,7 @@ public class AlbumService {
         return albumMapper.toAlbumResponse(album);
     }
 
+    @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public void addSongsToAlbum(String albumId, List<String> songIds){
         Album album = albumRepository.findById(albumId)
@@ -88,22 +89,38 @@ public class AlbumService {
             if (!albumArtistIds.contains(songArtistId)){ //Kiểm tra nghệ sĩ có nằm trong danh sách nghệ sĩ của album không?
                 throw new AppException(ErrorCode.SONG_ARTIST_MISMATCH);
             }
+
+            if (song.getAlbum() != null){
+                if (song.getAlbum().getId().equals(albumId)){
+                    throw new AppException(ErrorCode.SONG_ALREADY_IN_PLAYLIST);
+                } else {
+                    throw new AppException(ErrorCode.SONG_BELONGS_TO_ANOTHER_ALBUM);
+                }
+            }
+
             song.setAlbum(album);
         }
         songRepository.saveAll(songs);
     }
 
-    public Page<SongResponse> getAllSongsFromAlbum(String albumId, Pageable pageable){
-//        Album album = albumRepository.findById(albumId)
-//                .orElseThrow(() -> new AppException(ErrorCode.ALBUM_NOT_FOUND));
-//
-//        Set<Song> songs = album.getSongs();
-//        if(songs == null || songs.isEmpty()) return Collections.emptyList();
-//
-//        return songs.stream()
-//                .map(songMapper::toSongResponse)
-//                .collect(Collectors.toList());
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public void removeSongFromAlbum(String albumId, String songId){
+        albumRepository.findById(albumId)
+                .orElseThrow(() -> new AppException(ErrorCode.ARTIST_NOT_FOUND));
 
+        Song song = songRepository.findById(songId)
+                .orElseThrow(() -> new AppException(ErrorCode.SONG_NOT_FOUND));
+
+        if (song.getAlbum() == null || !song.getAlbum().getId().equals(albumId)){
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
+
+        song.setAlbum(null);
+        songRepository.save(song);
+    }
+
+    public Page<SongResponse> getAllSongsFromAlbum(String albumId, Pageable pageable){
         if(!albumRepository.existsById(albumId)){
             throw new AppException(ErrorCode.ALBUM_NOT_FOUND);
         }
@@ -158,21 +175,40 @@ public class AlbumService {
         return albumMapper.toAlbumResponse(album);
     }
 
+    @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public void deleteAlbum(String id){
         Album album = albumRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ALBUM_NOT_FOUND));
 
-        deleteFileCloud(album.getAlbumUrl(), "image");
+        if (album.getSongs() != null){
+            album.getSongs().forEach(song -> song.setAlbum(null));
+        }
+
+        if (album.getAlbumUrl() != null){
+            deleteFileCloud(album.getAlbumUrl(), "image");
+        }
 
         albumRepository.delete(album);
     }
 
-    public List<AlbumResponse> searchAlbum(String keyword){
-        return albumRepository.findByNameContaining(keyword)
-                .stream()
-                .map(albumMapper::toAlbumResponse)
-                .collect(Collectors.toList());
+    public Page<AlbumResponse> searchAlbum(String keyword, boolean isDeleted, Pageable pageable){
+        Page<AlbumRepository.AlbumWithSongCount> projections = albumRepository.searchAlbumsWithCount(keyword, isDeleted, pageable);
+        return projections.map(projection -> {
+            Album album = projection.getAlbum();
+            AlbumResponse response = albumMapper.toAlbumResponse(album);
+
+            response.setSongCount(projection.getSongCount() != null ? projection.getSongCount().intValue() : 0);
+
+            if (album.getArtists() != null && !album.getArtists().isEmpty()){
+                String names = album.getArtists().stream()
+                        .map(Artist::getName)
+                        .collect(Collectors.joining(", "));
+                response.setArtistName(names);
+            }
+
+            return response;
+        });
     }
 
     private String saveFileCloud(MultipartFile file, String folder){

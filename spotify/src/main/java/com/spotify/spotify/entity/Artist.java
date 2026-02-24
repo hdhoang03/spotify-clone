@@ -23,11 +23,9 @@ public class Artist {
     String description;
     String name;
     String avatarUrl;
-    //25/10
     String country;
     @Builder.Default //Không có thì set là 0 thay vì null
     Long followerCount = 0L;
-    LocalDate debutDate;
 
     @Column(name = "is_deleted")
     @Builder.Default

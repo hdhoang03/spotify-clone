@@ -1,5 +1,6 @@
 package com.spotify.spotify.dto.response;
 
+import com.spotify.spotify.constaint.CategoryType;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -15,5 +16,9 @@ public class CategoryResponse {
     String name;
     String coverUrl;
     String description;
-    List<SongResponse> songs;
+    String backgroundColor;
+    CategoryType type;
+    Integer songCount;
+    Boolean active;
+//    List<SongResponse> songs;
 }

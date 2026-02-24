@@ -3,139 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Lexend:wght@300;600;800&display=swap" rel="stylesheet">
+    <meta name="color-scheme" content="light dark">
+    <title>Mã xác thực: <span th:text="${otp}">123456</span></title> <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap" rel="stylesheet">
 
     <style>
-        /* 1. Reset & Base Font */
+        :root { color-scheme: light dark; }
         body {
-            margin: 0; padding: 0;
-            background-color: #f3f4f6;
-            /* Font Lexend cho cảm giác trẻ trung, Inter cho sự chuyên nghiệp */
-            font-family: 'Lexend', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            -webkit-font-smoothing: antialiased;
+            font-family: 'Lexend', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.5;
+            margin: 0;
+            padding: 40px 20px;
+            color: #121212;
+            background-color: #ffffff;
         }
 
-        .container {
-            max-width: 450px;
-            margin: 50px auto;
-            background: #ffffff;
-            border-radius: 32px; /* Bo tròn mạnh kiểu Gen Z */
-            overflow: hidden;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+        .content {
+            max-width: 400px;
+            margin: 0 auto;
         }
 
-        .content { padding: 48px 40px; text-align: center; }
-
-        /* 2. Logo tinh tế hơn */
         .logo {
-            font-family: 'Lexend', sans-serif;
-            font-size: 24px;
-            font-weight: 800;
             color: #1DB954;
-            letter-spacing: -1.5px;
+            font-weight: 700;
+            font-size: 18px;
             text-decoration: none;
-            display: inline-block;
+            display: block;
             margin-bottom: 32px;
         }
 
-        /* 3. Tiêu đề với font weight cực lớn (Heavy) */
         h1 {
-            color: #121212;
-            font-size: 32px;
-            font-weight: 800;
-            line-height: 1.2;
-            margin-bottom: 16px;
-            letter-spacing: -1px;
-        }
-
-        p {
-            color: #525252;
-            font-size: 16px;
-            line-height: 1.6;
-            margin-bottom: 24px;
-            font-weight: 400;
-        }
-
-        /* 4. OTP Box - Điểm nhấn chính */
-        .otp-container {
-            background-color: #f8f9fa;
-            border-radius: 24px;
-            padding: 32px;
-            margin: 32px 0;
-            border: 1px solid #f0f0f0;
-        }
-
-        .otp-label {
-            font-size: 11px;
-            text-transform: uppercase;
-            color: #a0a0a0;
+            font-size: 24px;
             font-weight: 700;
-            letter-spacing: 2px;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
         }
 
-        .otp-code {
-            font-family: 'Inter', sans-serif; /* Dùng Inter cho số để dễ đọc */
-            font-size: 56px;
-            font-weight: 900;
+        .otp {
+            font-size: 40px;
+            font-weight: 700;
             color: #1DB954;
-            letter-spacing: 10px;
-            margin-right: -10px; /* Cân bằng letter-spacing */
-        }
-
-        .timer-warning {
-            display: inline-flex;
-            align-items: center;
-            background: #fff1f0;
-            color: #ff4d4f;
-            padding: 8px 20px;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 600;
+            margin: 24px 0;
+            letter-spacing: 4px;
         }
 
         .footer {
-            padding: 32px;
-            text-align: center;
+            margin-top: 48px;
             font-size: 13px;
-            color: #9ca3af;
-            background: #fafafa;
-            border-top: 1px solid #f0f0f0;
+            color: #6A6A6A;
+            border-top: 1px solid #eeeeee;
+            padding-top: 24px;
         }
 
-        /* 5. Dark Mode cực mượt */
+        /* Dark Mode */
         @media (prefers-color-scheme: dark) {
-            body { background-color: #000000 !important; }
-            .container { background-color: #121212 !important; box-shadow: 0 20px 40px rgba(0,0,0,0.4) !important; border: 1px solid #282828; }
+            body { background-color: #121212 !important; color: #ffffff !important; }
+            .footer { border-top-color: #282828 !important; color: #A7A7A7 !important; }
             h1 { color: #ffffff !important; }
-            p { color: #b3b3b3 !important; }
-            .otp-container { background-color: #181818 !important; border-color: #333 !important; }
-            .timer-warning { background: rgba(255, 77, 79, 0.1) !important; color: #ff7875 !important; }
-            .footer { background: #0a0a0a !important; border-color: #1e1e1e !important; }
-            .logo span { color: #ffffff !important; }
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="content">
-        <a href="#" class="logo">Spotify<span style="color: #191414;">Clone</span></a>
+<div class="content">
+    <a href="#" class="logo">SpringTunes</a>
 
-        <h1>Xác thực thôi nào!</h1>
-        <p>Hi <span th:text="${name}" style="color: #1DB954; font-weight: 600;">User</span>, nhập mã này để "on board" cùng tụi mình nhé. Đừng để âm nhạc phải chờ đợi!</p>
+    <p style="margin-bottom: 8px;">Xin chào <strong th:text="${name}">User</strong>,</p>
+    <h1>Mã xác thực của bạn là:</h1>
 
-        <div class="otp-container">
-            <div class="otp-label">Your Security Code</div>
-            <div class="otp-code" th:text="${otp}">888888</div>
-        </div>
+    <div class="otp" th:text="${otp}">123456</div>
 
-        <div class="timer-warning">
-            Mã hết hạn sau 5 phút ⏳
-        </div>
-    </div>
+    <p style="font-size: 14px; color: #6A6A6A;">
+        Mã này sẽ hết hạn sau <strong>5 phút</strong>.<br>
+        Vui lòng không chia sẻ mã này với bất kỳ ai.
+    </p>
 
     <div class="footer">
-        <p>Made with 💚<br> &copy; 2025 Spotify Clone Team</p>
+        &copy; 2026 SpringTunes Team. <br>
+        Nếu bạn không yêu cầu mã này, bạn có thể an tâm bỏ qua email.
     </div>
 </div>
 </body>

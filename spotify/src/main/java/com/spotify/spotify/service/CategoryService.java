@@ -2,6 +2,7 @@ package com.spotify.spotify.service;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+import com.spotify.spotify.constaint.CategoryType;
 import com.spotify.spotify.dto.request.CategoryRequest;
 import com.spotify.spotify.dto.request.CategoryUpdateRequest;
 import com.spotify.spotify.dto.response.CategoryResponse;
@@ -59,17 +60,36 @@ public class CategoryService {
 
     @PreAuthorize("hasRole('ADMIN')")
     @Transactional //Rollback khi gặp lỗi
-    public CategoryResponse addSongToCategory(String categoryId, String songId){
+    public CategoryResponse addSongToCategory(String categoryId, List<String> songIds){
         Category category = categoryRepository.findByIdAndDeletedFalse(categoryId)
+                .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
+
+        List<Song> songs = songRepository.findAllById(songIds);
+        if (songs.size() != songIds.size()){
+            throw new AppException(ErrorCode.SONG_NOT_FOUND);
+        }
+
+        songs.forEach(song -> song.setCategory(category));
+        songRepository.saveAll(songs);
+
+        return categoryMapper.toCategoryResponse(category);
+    }
+
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public void removeSongFromCategory(String categoryId, String songId){
+        categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
 
         Song song = songRepository.findById(songId)
                 .orElseThrow(() -> new AppException(ErrorCode.SONG_NOT_FOUND));
 
-        song.setCategory(category);
-        songRepository.save(song);
+        if (song.getCategory() != null || !song.getCategory().getId().equals(categoryId)){
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
 
-        return categoryMapper.toCategoryResponse(category);
+        song.setCategory(null);
+        songRepository.save(song);
     }
 
     public Page<CategoryResponse> getAllCategories(Pageable pageable){
@@ -89,12 +109,13 @@ public class CategoryService {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
 
+        categoryMapper.updateCategory(category, request);
+
         //Kiểm tra có trùng tên không
-        if (!category.getName().equalsIgnoreCase(request.getName()) && categoryRepository.existsByNameIgnoreCase(request.getName())){
+        if (request.getName() != null && !category.getName().equalsIgnoreCase(request.getName())
+                && categoryRepository.existsByNameIgnoreCase(request.getName())){
             throw new AppException(ErrorCode.CATEGORY_ALREADY_EXISTS);
         }
-
-        categoryMapper.updateCategory(category, request);
         if(request.getCoverUrl() != null && !request.getCoverUrl().isEmpty()){
             if (category.getCoverUrl() != null){
                 deleteFileCloud(category.getCoverUrl(), "image");
@@ -130,9 +151,36 @@ public class CategoryService {
         categoryRepository.save(category);
     }
 
-    public Page<CategoryResponse> searchCategories(String keyword, Pageable pageable){
-        return categoryRepository.findByNameContainingIgnoreCaseAndDeletedFalse(keyword, pageable)
-                .map(categoryMapper::toCategoryResponse);
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public void restoreCategory(String id){
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
+        category.setDeleted(false);
+        category.setActive(true);
+        categoryRepository.save(category);
+    }
+
+    public Page<CategoryResponse> searchCategories(String keyword, boolean isDeleted, Pageable pageable){
+        var projections = categoryRepository.searchCategoriesWithCount(keyword, isDeleted, pageable);
+        return projections.map(categoryMapper::toCategoryResponseFromProjection);
+    }
+
+    public List<CategoryResponse> getCategoriesByType(CategoryType type){
+        return categoryRepository.findByTypeAndDeletedFalseOrderByDisplayOrderAsc(type)
+                .stream()
+                .map(categoryMapper::toCategoryResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public CategoryResponse updateDisplayOrder(String id, Integer newOrder){
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
+
+        category.setDisplayOrder(newOrder);
+        return categoryMapper.toCategoryResponse(categoryRepository.save(category));
     }
 
     private String saveFileCloud(MultipartFile file, String folder){

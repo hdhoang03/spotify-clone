@@ -13,10 +13,28 @@ import java.util.Optional;
 
 @Repository
 public interface AlbumRepository extends JpaRepository<Album, String> {
+
+    interface AlbumWithSongCount{
+        Album getAlbum();
+        Long getSongCount();
+    }
+
+    @Query("""
+            SELECT al AS album, COUNT(DISTINCT s.id) AS songCount
+            FROM Album al
+            LEFT JOIN al.songs s ON s.deleted = false
+            LEFT JOIN al.artists ar
+            WHERE al.deleted = :isDeleted
+            AND (:keyword IS NULL OR LOWER(al.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+                                     LOWER(ar.name) LIKE LOWER(CONCAT('%', :keyword, '%')))
+            GROUP BY al.id
+            """)
+    Page<AlbumWithSongCount> searchAlbumsWithCount(@Param("keyword") String keyword,
+                                                   @Param("isDeleted") boolean isDeleted,
+                                                   Pageable pageable);
+
     boolean existsByNameAndArtists_Id(String name, String artistId);
-    List<Album> findByNameContaining(String keyword);
     List<Album> findByArtists_Id(String artistId);
-    Page<Album> findByNameContainingIgnoreCaseAndDeletedFalse(String keyword, Pageable pageable);
     @Query("""
             SELECT DISTINCT al FROM Album al
             LEFT JOIN al.artists ar

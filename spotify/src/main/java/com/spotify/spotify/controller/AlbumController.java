@@ -40,6 +40,16 @@ public class AlbumController {
                 .build();
     }
 
+    @DeleteMapping("/{albumId}/songs/{songId}")
+    ApiResponse<Void> removeSongFromAlbum(@PathVariable String albumId,
+                                          @PathVariable String songId){
+        albumService.removeSongFromAlbum(albumId, songId);
+        return ApiResponse.<Void>builder()
+                .code(1000)
+                .message("Song has been removed from album")
+                .build();
+    }
+
     @GetMapping("/all")
     ApiResponse<Page<AlbumResponse>> getAllAlbum(@RequestParam(defaultValue = "1") int page,
                                                  @RequestParam(defaultValue = "10") int size
@@ -92,12 +102,14 @@ public class AlbumController {
                 .build();
     }
 
-    @GetMapping("/search")
-    ApiResponse<List<AlbumResponse>> searchAlbum(@RequestParam String keyword){
-        return ApiResponse.<List<AlbumResponse>>builder()
+    @GetMapping("/list")
+    ApiResponse<Page<AlbumResponse>> searchAlbum(@RequestParam(defaultValue = "", required = false) String keyword,
+                                                 @RequestParam(defaultValue = "1") int page,
+                                                 @RequestParam(defaultValue = "10") int size,
+                                                 @RequestParam(defaultValue = "false") boolean isDeleted){
+        return ApiResponse.<Page<AlbumResponse>>builder()
                 .code(1000)
-                .message("Result")
-                .result(albumService.searchAlbum(keyword))
+                .result(albumService.searchAlbum(keyword, isDeleted, PageRequest.of(page - 1, size)))
                 .build();
     }
 }

@@ -37,9 +37,9 @@ public class SearchService {
     CategoryMapper categoryMapper;
 
     public SearchResponse searchEverything(String keyword){
-        Pageable limit = PageRequest.of(0, 6); //Thay Pageable.unpaged() thành limit dể giới hạn kết quả
+        Pageable limit = PageRequest.of(0, 5); //Thay Pageable.unpaged() thành limit dể giới hạn kết quả
         var artists = CompletableFuture.supplyAsync(() ->
-                artistRepository.findByNameContainingIgnoreCaseAndDeletedFalse(keyword, limit)
+                artistRepository.findByNameContainingIgnoreCaseAndDeleted(keyword, false, limit)
                         .stream().map(artistMapper::toArtistResponse).toList()
         );
 
@@ -54,8 +54,8 @@ public class SearchService {
         );
 
         var categories = CompletableFuture.supplyAsync(() ->
-                categoryRepository.findByNameContainingIgnoreCaseAndDeletedFalse(keyword, limit)
-                        .stream().map(categoryMapper::toCategoryResponse).toList()
+                categoryRepository.searchCategoriesWithCount(keyword, false, limit)
+                        .stream().map(categoryMapper::toCategoryResponseFromProjection).toList()
         );
 
         CompletableFuture.allOf(artists, songs, albums, categories).join();

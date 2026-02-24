@@ -24,8 +24,12 @@ public interface SongRepository extends JpaRepository<Song, String>, JpaSpecific
     int incrementPlayCount(@Param("id") String id); //Cộng 1
 
     List<Song> findByArtist_Id(String artistId);
-    Page<Song> findByTitleContainingIgnoreCaseAndDeletedFalse(String keyword, Pageable pageable);
+    @Query("SELECT s FROM Song s WHERE s.deleted = false AND s.artist.deleted = false AND LOWER(s.title) LIKE LOWER(CONCAT('%', :keyword, '%'))")
+    Page<Song> searchActiveSongByTitle(String keyword, Pageable pageable);
     Page<Song> findByAlbum_Id(String albumId, Pageable pageable);
+//    Page<Song> findAllByDeletedFalse(Pageable pageable);
+    @Query("SELECT s FROM Song s WHERE s.deleted = false AND s.artist.deleted = false")
+    Page<Song> findAllActiveSongs(Pageable pageable);
     @Query("""
             SELECT s FROM Song s
             LEFT JOIN FETCH s.album

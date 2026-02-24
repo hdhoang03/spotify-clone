@@ -1,5 +1,6 @@
 package com.spotify.spotify.controller;
 
+import com.spotify.spotify.constaint.CategoryType;
 import com.spotify.spotify.dto.ApiResponse;
 import com.spotify.spotify.dto.request.CategoryRequest;
 import com.spotify.spotify.dto.request.CategoryUpdateRequest;
@@ -72,12 +73,13 @@ public class CategoryController {
                 .build();
     }
 
-    @GetMapping("/search")
-    ApiResponse<Page<CategoryResponse>> searchCategories(@RequestParam String keyword,
+    @GetMapping("/list")
+    ApiResponse<Page<CategoryResponse>> searchCategories(@RequestParam(defaultValue = "", required = false) String keyword,
                                                          @RequestParam(defaultValue = "1") int page,
-                                                         @RequestParam(defaultValue = "10") int size
+                                                         @RequestParam(defaultValue = "10") int size,
+                                                         @RequestParam(defaultValue = "false") boolean isDeleted
     ){
-        Page<CategoryResponse> responses = categoryService.searchCategories(keyword, PageRequest.of(page - 1, size));
+        Page<CategoryResponse> responses = categoryService.searchCategories(keyword, isDeleted, PageRequest.of(page - 1, size));
         return ApiResponse.<Page<CategoryResponse>>builder()
                 .code(1000)
                 .message("Categories search result!")
@@ -85,13 +87,48 @@ public class CategoryController {
                 .build();
     }
 
-    @PostMapping("/{categoryId}/songs/{songId}")
-    ApiResponse<CategoryResponse> addSongToCategory(@PathVariable String categoryId, @PathVariable String songId){
+    @PatchMapping("/restore/{id}")
+    ApiResponse<Void> restoreCategory(@PathVariable String id){
+        categoryService.restoreCategory(id);
+        return ApiResponse.<Void>builder()
+                .code(1000)
+                .message("Category has been restored")
+                .build();
+    }
+
+    @PostMapping("/{categoryId}/songs")
+    ApiResponse<CategoryResponse> addSongsToCategory(@PathVariable String categoryId,
+                                                     @PathVariable List<String> songIds){
         return ApiResponse.<CategoryResponse>builder()
                 .code(1000)
                 .message("Song has been added into category.")
-                .result(categoryService.addSongToCategory(categoryId, songId))
+                .result(categoryService.addSongToCategory(categoryId, songIds))
                 .build();
     }
-    //Thêm endpoint xóa khỏi category
+
+    @DeleteMapping("/{categoryId}/songs/{songId}")
+    ApiResponse<Void> removeSongFromCategory(@PathVariable String categoryId, @PathVariable String songId){
+        categoryService.removeSongFromCategory(categoryId, songId);
+        return ApiResponse.<Void>builder()
+                .code(1000)
+                .message("Song has been removed from category")
+                .build();
+    }
+
+    @GetMapping("/type/{type}")
+    ApiResponse<List<CategoryResponse>> getCategoriesByType(@PathVariable CategoryType type){
+        return ApiResponse.<List<CategoryResponse>>builder()
+                .code(1000)
+                .result(categoryService.getCategoriesByType(type))
+                .build();
+    }
+
+    @PutMapping("/{id}/display-order")
+    ApiResponse<CategoryResponse> updateCategoryOrder(@PathVariable String id, @RequestParam Integer order){
+        return ApiResponse.<CategoryResponse>builder()
+                .code(1000)
+                .message("Display order updated!")
+                .result(categoryService.updateDisplayOrder(id, order))
+                .build();
+    }
 }

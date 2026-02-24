@@ -78,10 +78,10 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration corsConfiguration = new CorsConfiguration();
 
-        corsConfiguration.setAllowedOrigins(List.of("http://localhost:3000"));
         corsConfiguration.addAllowedMethod("*");
-        corsConfiguration.setAllowedHeaders(List.of("*"));
-        corsConfiguration.setAllowCredentials(true);
+        corsConfiguration.addAllowedHeader("*");
+        corsConfiguration.addAllowedOrigin("*");
+//        corsConfiguration.setAllowCredentials(true); //Khi sử dụng cái này phải nêu rõ api
 
         source.registerCorsConfiguration("/**", corsConfiguration);
         return new CorsFilter(source);

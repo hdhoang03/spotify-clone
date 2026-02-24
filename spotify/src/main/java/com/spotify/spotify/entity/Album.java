@@ -26,7 +26,7 @@ public class Album {
     @ManyToMany
     @JoinTable(name = "album_artist", joinColumns = @JoinColumn(name = "album_id"), inverseJoinColumns = @JoinColumn(name = "artist_id"))
     Set<Artist> artists = new HashSet<>();
-    @OneToMany(mappedBy = "album", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "album", fetch = FetchType.LAZY)
     @JsonIgnore
     Set<Song> songs = new HashSet<>();
 

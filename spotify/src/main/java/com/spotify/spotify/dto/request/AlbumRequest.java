@@ -4,6 +4,8 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
+
 @Data
 @Builder
 @AllArgsConstructor
@@ -13,5 +15,6 @@ public class AlbumRequest {
     String name;
     String description;
     String artistId;
+    LocalDate releaseDate;
     MultipartFile avatarUrl;//có gì chỉnh
 }
