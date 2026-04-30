@@ -44,11 +44,13 @@ public class SongService {
     SongRepository songRepository;
     AlbumRepository albumRepository;
     ArtistRepository artistRepository;
+    CategoryRepository categoryRepository;
     SongMapper songMapper;
     Cloudinary cloudinary;
 
     private static final String UPLOAD_DIR = "uploads/";
 
+    @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public SongResponse createSong(SongRequest request){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -64,14 +66,19 @@ public class SongService {
                     .orElseThrow(() -> new AppException(ErrorCode.ALBUM_NOT_FOUND));
         }
 
+        Category category = null;
+        if (request.getCategoryId() != null && !request.getCategoryId().isEmpty()){
+            category = categoryRepository.findById(request.getCategoryId())
+                    .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
+        }
+
         Song song = songMapper.toSong(request);
-//        String coverPath = saveFile(request.getCoverUrl(), "covers");
-//        String audioPath = saveFile(request.getAudioUrl(), "audios");
         CloudinaryResponse coverPath = saveFileCloud(request.getCoverUrl(), "covers");
         CloudinaryResponse audioPath = saveFileCloud(request.getAudioUrl(), "audios");
 
         //set thủ công vì trong mapping ignore
         song.setAlbum(album);
+        song.setCategory(category);
         song.setArtist(artist);
         song.setUploadedBy(user);
         song.setCreatedAt(LocalDateTime.now());
@@ -89,6 +96,7 @@ public class SongService {
         return songMapper.toSongResponse(song);
     }
 
+    @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public SongResponse updateSong(String id, SongRequest request){
         Song song = songRepository.findById(id)
@@ -106,12 +114,12 @@ public class SongService {
                     .orElseThrow(() -> new AppException(ErrorCode.ALBUM_NOT_FOUND));
             song.setAlbum(album);
         }
-//
-//        if(request.getCategory() != null && !request.getCategory().isEmpty()){
-//            Category category = categoryRepository.findById(request.getCategory())
-//                    .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
-//            song.setCategory(category);
-//        }
+
+        if(request.getCategoryId() != null && !request.getCategoryId().isEmpty()){
+            Category category = categoryRepository.findById(request.getCategoryId())
+                    .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
+            song.setCategory(category);
+        }
 
         if(request.getCoverUrl() != null && !request.getCoverUrl().isEmpty()){
             deleteFileCloud(song.getCoverUrl(), "image");

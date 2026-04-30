@@ -2,11 +2,11 @@ package com.spotify.spotify.controller;
 
 import com.cloudinary.Api;
 import com.spotify.spotify.dto.ApiResponse;
+import com.spotify.spotify.dto.request.SupportRequest;
 import com.spotify.spotify.dto.request.UserCreationRequest;
+import com.spotify.spotify.dto.request.UserProfileUpdateRequest;
 import com.spotify.spotify.dto.request.UserUpdateRequest;
-import com.spotify.spotify.dto.response.ArtistFollowResponse;
-import com.spotify.spotify.dto.response.ArtistResponse;
-import com.spotify.spotify.dto.response.UserResponse;
+import com.spotify.spotify.dto.response.*;
 import com.spotify.spotify.service.ArtistFollowService;
 import com.spotify.spotify.service.UserService;
 import lombok.AccessLevel;
@@ -16,6 +16,8 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -56,13 +58,14 @@ public class UserController {
     }
 
     @GetMapping("/list")
-    ApiResponse<Page<UserResponse>> getUser(@RequestParam(defaultValue = "", required = false) String keyword,
-                                            @RequestParam(defaultValue = "1") int page,
-                                            @RequestParam(defaultValue = "10") int size){
+    ApiResponse<Page<UserResponse>> searchUser(@RequestParam(defaultValue = "", required = false) String keyword,
+                                               @RequestParam(defaultValue = "1") int page,
+                                               @RequestParam(defaultValue = "10") int size){
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return ApiResponse.<Page<UserResponse>>builder()
                 .code(1000)
                 .message("Users have been fetched!")
-                .result(userService.searchUser(keyword, PageRequest.of(page - 1, size)))
+                .result(userService.searchUser(keyword, pageable))
                 .build();
     }
 
@@ -85,12 +88,11 @@ public class UserController {
     }
 
     @PutMapping("/profile/privacy")
-    ApiResponse<Void> togglePrivacy(@RequestParam Boolean isPublic){
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        userService.togglePrivacy(username, isPublic);
-        return ApiResponse.<Void>builder()
+    ApiResponse<Boolean> togglePrivacy(){
+        return ApiResponse.<Boolean>builder()
                 .code(1000)
-                .message(isPublic ? "Profile set to public." : "Profile set to private.")
+                .result(userService.togglePrivacy())
+                .message("Privacy status updated successfully!")
                 .build();
     }
 
@@ -116,4 +118,81 @@ public class UserController {
                 .build();
     }
 
+    @GetMapping("/{userId}/profile")
+    ApiResponse<UserProfileResponse> getUserResponse(@PathVariable String userId){
+        return ApiResponse.<UserProfileResponse>builder()
+                .code(1000)
+                .message("User's profile has been fetched!")
+                .result(userService.getUserProfile(userId))
+                .build();
+    }
+
+    @PostMapping("/{userId}/follow")
+    ApiResponse<Boolean> toggleFollowUser(@PathVariable String userId){
+        boolean isFollowed = userService.toggleFollowUser(userId);
+        return ApiResponse.<Boolean>builder()
+                .code(1000)
+                .message(isFollowed ? "Followed user successfully" : "Unfollowed user successfully")
+                .result(isFollowed)
+                .build();
+    }
+
+    @GetMapping("/{userId}/following-users")
+    ApiResponse<Page<UserSummaryResponse>> getFollowingUsers(@PathVariable String userId,
+                                                             @RequestParam(defaultValue = "1") int page,
+                                                             @RequestParam(defaultValue = "10") int size){
+        return ApiResponse.<Page<UserSummaryResponse>>builder()
+                .code(1000)
+                .message("Get following users successfully.")
+                .result(userService.getFollowingUsers(userId, PageRequest.of(page - 1, size)))
+                .build();
+    }
+
+    @GetMapping("/{userId}/followers")
+    ApiResponse<Page<UserSummaryResponse>> getFollowers(@PathVariable String userId,
+                                                        @RequestParam(defaultValue = "1") int page,
+                                                        @RequestParam(defaultValue = "10") int size){
+        return ApiResponse.<Page<UserSummaryResponse>>builder()
+                .code(1000)
+                .message("Get follower successfully.")
+                .result(userService.getFollowers(userId, PageRequest.of(page - 1, size)))
+                .build();
+    }
+
+    @PutMapping("/profile/update")
+    ApiResponse<UserProfileResponse> updateMyProfile(@ModelAttribute UserProfileUpdateRequest request){
+        return ApiResponse.<UserProfileResponse>builder()
+                .code(1000)
+                .message("Profile upload successfully!")
+                .result(userService.updateMyProfile(request))
+                .build();
+    }
+
+    @PostMapping("/support")
+    ApiResponse<Void> sendSupportRequest(@RequestBody SupportRequest request){
+        userService.sendSupportEmail(request);
+        return ApiResponse.<Void>builder()
+                .code(1000)
+                .message("Support request sent successfully!")
+                .build();
+    }
+
+    @GetMapping("/blocked")
+    ApiResponse<Page<UserSummaryResponse>> getBlockedUser(@RequestParam(defaultValue = "1") int page,
+                                                    @RequestParam(defaultValue = "10") int size){
+        return ApiResponse.<Page<UserSummaryResponse>>builder()
+                .code(1000)
+                .message("Fetched blocked user successfully!")
+                .result(userService.getBlockedUser(PageRequest.of(page - 1, size)))
+                .build();
+    }
+
+    @PostMapping("/{userId}/block")
+    ApiResponse<Boolean> toggleBlockUser(@PathVariable String userId){
+        boolean isBlocked = userService.toggleBlockUser(userId);
+        return ApiResponse.<Boolean>builder()
+                .code(1000)
+                .message(isBlocked ? "Blocked user successfully" : "Unblocked user successfully")
+                .build();
+    }
 }

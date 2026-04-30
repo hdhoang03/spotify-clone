@@ -45,7 +45,7 @@ public class User {
     String bio;
 
     @Column(name = "created_at")
-    LocalDate createAt;
+    LocalDate createdAt;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     Set<Playlist> playlists = new HashSet<>();
@@ -54,10 +54,22 @@ public class User {
     Set<LikeSong> likes = new HashSet<>();
 
     @Builder.Default
-    boolean isPublicProfile = true;
+    Boolean isPublicProfile = true;
+
+    @Builder.Default
+    Long followerCount = 0L;
+
+    @Builder.Default
+    Long followingCount = 0L;
 
     @PrePersist
     void onCreate(){
-        createAt = LocalDate.now();
+        createdAt = LocalDate.now();
     }
+
+    @OneToMany(mappedBy = "following", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    Set<UserFollow> followers = new HashSet<>();
+
+    @OneToMany(mappedBy = "follower", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    Set<UserFollow> followingUsers = new HashSet<>();
 }

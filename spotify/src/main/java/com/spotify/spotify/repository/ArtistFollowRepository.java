@@ -23,4 +23,5 @@ public interface ArtistFollowRepository extends JpaRepository<ArtistFollow, Stri
     Page<Artist> findFollowedArtistByUserId(@Param("userId") String userId, Pageable pageable);//Lấy danh sách nghệ sĩ user đang theo dõi
     List<ArtistFollow> findAllByArtistId(String artistId); //Lấy danh sách người dùng theo dõi nghệ sĩ
     Long countByArtistId(String artistId); //Đếm số người theo dõi
+    Long countByUserId(String userId);
 }

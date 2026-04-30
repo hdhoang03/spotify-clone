@@ -31,6 +31,7 @@ public class SearchController {
                             .songs(Collections.emptyList())
                             .albums(Collections.emptyList())
                             .categories(Collections.emptyList())
+                            .users(Collections.emptyList())
                             .build())
                     .build();
         }

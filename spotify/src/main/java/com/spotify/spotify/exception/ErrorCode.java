@@ -44,6 +44,8 @@ public enum ErrorCode {
     IS_ADMIN(1028, "This is admin account, you can't change status", HttpStatus.BAD_REQUEST),
     SONG_BELONGS_TO_ANOTHER_ALBUM(1029, "Song belongs to another album", HttpStatus.BAD_REQUEST),
     INVALID_REQUEST(1030, "Invalid request", HttpStatus.BAD_REQUEST),
+    CANNOT_DELETE_DEFAULT_PLAYLIST(1031, "Can't delete default playlist", HttpStatus.BAD_REQUEST),
+
     ;
     int code;
     String message;

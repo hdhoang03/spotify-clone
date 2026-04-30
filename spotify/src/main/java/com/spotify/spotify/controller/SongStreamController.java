@@ -2,14 +2,13 @@ package com.spotify.spotify.controller;
 
 import com.spotify.spotify.dto.ApiResponse;
 import com.spotify.spotify.dto.request.SongStreamRequest;
-import com.spotify.spotify.dto.response.SongStreamResponse;
-import com.spotify.spotify.dto.response.StreamStatResponse;
-import com.spotify.spotify.dto.response.TopStreamResponse;
+import com.spotify.spotify.dto.response.*;
 import com.spotify.spotify.service.SongStreamService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.cglib.core.Local;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -85,11 +84,39 @@ public class SongStreamController {
     }
 
     @GetMapping("/top")
-    ApiResponse<List<TopStreamResponse>> getTopStreamSongs(){
-        return ApiResponse.<List<TopStreamResponse>>builder()
+    ApiResponse<List<TopLikeSongResponse>> getTopStreamSongs(){
+        return ApiResponse.<List<TopLikeSongResponse>>builder()
                 .code(1000)
                 .message("Top songs")
                 .result(songStreamService.getTopStreamSongs())
+                .build();
+    }
+
+    @GetMapping("/my-tracks")
+    ApiResponse<List<TopLikeSongResponse>> getMyTopTracksOfThisMonth(@RequestParam(required = false) Integer month,
+                                                                     @RequestParam(required = false) Integer year){
+
+        if (month == null) month = LocalDate.now().getMonthValue();
+        if (year == null) year = LocalDate.now().getYear();
+
+        return ApiResponse.<List<TopLikeSongResponse>>builder()
+                .code(1000)
+                .message("Hehe")
+                .result(songStreamService.getMyTopTracksOfThisMonth(month, year))
+                .build();
+    }
+
+    @GetMapping("/my-artists")
+    ApiResponse<List<ArtistResponse>> getMyTopArtistsOfMonth(@RequestParam(required = false) Integer month,
+                                                             @RequestParam(required = false) Integer year){
+
+        if (month == null) month = LocalDate.now().getMonthValue();
+        if (year == null) year = LocalDate.now().getYear();
+
+        return ApiResponse.<List<ArtistResponse>>builder()
+                .code(1000)
+                .message("hehe")
+                .result(songStreamService.getMyTopArtistsOfMonth(month, year))
                 .build();
     }
 }

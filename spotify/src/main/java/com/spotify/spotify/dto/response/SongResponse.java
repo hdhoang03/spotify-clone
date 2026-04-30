@@ -5,6 +5,7 @@ import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -14,9 +15,11 @@ import java.time.LocalDateTime;
 public class SongResponse {
     String id;
     String title;
+    String artistId;
     String artist;
     String albumId;
     String albumName;
+    String categoryId;
     String category;
     String coverUrl;
     String audioUrl;
@@ -24,4 +27,6 @@ public class SongResponse {
     Double duration; //mới thêm
     LocalDateTime createdAt;
     LocalDate releaseDate;
+//    List<ArtistInfo> featureArtists;
+//    public record ArtistInfo(String id, String name) {}
 }

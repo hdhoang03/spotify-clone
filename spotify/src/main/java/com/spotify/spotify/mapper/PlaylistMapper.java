@@ -15,20 +15,20 @@ import org.mapstruct.*;
 )//BỎ qua các trường 0 update
 public interface PlaylistMapper {
     @Mapping(target = "coverUrl", ignore = true)
-    @Mapping(target = "songs", ignore = true)//Tạo playlist mới để trống
+    @Mapping(target = "playlistSongs", ignore = true)//Tạo playlist mới để trống
     Playlist toPlaylist(PlaylistRequest request);
 
     @Named("toPlaylistSummary")
 //    @Mapping(target = "songs", ignore = true)
-    @Mapping(target = "songCount", expression = "java(playlist.getSongs() != null ? playlist.getSongs().size() : 0)")
+    @Mapping(target = "songCount", expression = "java(playlist.getPlaylistSongs() != null ? playlist.getPlaylistSongs().size() : 0)")
     @Mapping(target = "user", expression = "java(toUserSummary(playlist.getUser()))")
     @Mapping(source = "createdAt", target = "createdAt")
     PlaylistResponse toPlaylistResponse(Playlist playlist);
 
-    @Name("toPlaylistDetail")
-    @Mapping(target = "user", expression = "java(toUserSummary(playlist.getUser()))")
-    @Mapping(target = "songCount", expression = "java(playlist.getSongs() != null ? playlist.getSongs().size() : 0)")
-    PlaylistResponse toPlaylistDetailResponse(Playlist playlist);
+//    @Named("toPlaylistDetail")
+//    @Mapping(target = "user", expression = "java(toUserSummary(playlist.getUser()))")
+//    @Mapping(target = "songCount", expression = "java(playlist.getPlaylistSongs() != null ? playlist.getPlaylistSongs().size() : 0)")
+//    PlaylistResponse toPlaylistDetailResponse(Playlist playlist);
 
     default UserSummaryResponse toUserSummary(User user){
         if(user == null) return  null;
@@ -40,7 +40,7 @@ public interface PlaylistMapper {
     }
 
     @Mapping(target = "coverUrl", ignore = true)
-    @Mapping(target = "songs", ignore = true) //Không cập nhật bài hát trong hàm này
+    @Mapping(target = "playlistSongs", ignore = true) //Không cập nhật bài hát trong hàm này
     @Mapping(target = "user", ignore = true) //không cập nhật chủ playlist
     void updatePlaylist(@MappingTarget Playlist playlist, PlaylistUpdateRequest request);
 }

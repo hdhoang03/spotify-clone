@@ -1,15 +1,15 @@
 package com.spotify.spotify.service;
 
 import com.spotify.spotify.dto.request.SongStreamRequest;
-import com.spotify.spotify.dto.response.SongStreamResponse;
-import com.spotify.spotify.dto.response.StreamStatResponse;
-import com.spotify.spotify.dto.response.TopStreamResponse;
+import com.spotify.spotify.dto.response.*;
+import com.spotify.spotify.entity.Artist;
 import com.spotify.spotify.entity.Song;
 import com.spotify.spotify.entity.SongStream;
 import com.spotify.spotify.entity.User;
 import com.spotify.spotify.exception.AppException;
 import com.spotify.spotify.exception.ErrorCode;
 import com.spotify.spotify.kafka.KafkaProducerService;
+import com.spotify.spotify.mapper.ArtistMapper;
 import com.spotify.spotify.mapper.SongStreamMapper;
 import com.spotify.spotify.repository.SongRepository;
 import com.spotify.spotify.repository.SongStreamRepository;
@@ -44,8 +44,8 @@ public class SongStreamService {
     UserRepository userRepository;
     RedisTemplate<String, Object> redisTemplate;
     KafkaProducerService kafkaProducerService;
+    ArtistMapper artistMapper;
 
-    static String PLAY_BUFFER_KEY = "song_play_buffer";
     static String PLAY_COOLDOWN_KEY_FORMAT = "play_cooldown:%s:%s";
 
     @Transactional //Query là phải có transactional
@@ -141,8 +141,28 @@ public class SongStreamService {
         return songStreamRepository.getStreamStats(songId, startDateTime, endDateTime);
     }
 
-    public List<TopStreamResponse> getTopStreamSongs(){ //Top bài hát nghe nhiều
+    public List<TopLikeSongResponse> getTopStreamSongs(){ //Top bài hát nghe nhiều
         return songStreamRepository.findTopStreamSongs();
+    }
+
+    public List<TopLikeSongResponse> getMyTopTracksOfThisMonth(int month, int year){
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        return songStreamRepository.findMyTopTracksOfThisMonth(user.getId(), month, year);
+    }
+
+    public List<ArtistResponse> getMyTopArtistsOfMonth(int month, int year){
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        List<Artist> topArtists = songStreamRepository.findMyTopAritstsOfThisMonthEntity(user.getId(), month, year);
+
+        return topArtists.stream()
+                .map(artistMapper::toArtistResponse)
+                .toList();
     }
 }
 

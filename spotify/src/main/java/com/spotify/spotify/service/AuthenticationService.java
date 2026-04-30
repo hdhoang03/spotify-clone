@@ -53,6 +53,7 @@ public class AuthenticationService {
     RoleRepository roleRepository;
     ObjectMapper objectMapper;
     KafkaProducerService kafkaProducerService;
+    PlaylistService playlistService;
 
     @NonFinal
     @Value("${jwt.signerKey}")
@@ -123,7 +124,7 @@ public class AuthenticationService {
         user.setEnabled(true);
 
         userRepository.save(user);
-
+        playlistService.createDefaultPlaylist(user);
         redisTemplate.delete(redisKey);
 
         return AuthenticationResponse.builder()

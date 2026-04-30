@@ -4,6 +4,9 @@ import com.spotify.spotify.dto.ApiResponse;
 import com.spotify.spotify.dto.request.PlaylistRequest;
 import com.spotify.spotify.dto.request.PlaylistUpdateRequest;
 import com.spotify.spotify.dto.response.PlaylistResponse;
+import com.spotify.spotify.dto.response.PlaylistSongResponse;
+import com.spotify.spotify.dto.response.SongResponse;
+import com.spotify.spotify.dto.response.TopLikeSongResponse;
 import com.spotify.spotify.service.PlaylistService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +14,8 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -91,6 +96,27 @@ public class PlaylistController {
         return ApiResponse.<Void>builder()
                 .code(1000)
                 .message("Delete playlist successfully!")
+                .build();
+    }
+
+    @GetMapping("/{targetUserId}/user")
+    ApiResponse<Page<PlaylistResponse>> getUserPlaylist(@PathVariable String targetUserId,
+                                                        @RequestParam(defaultValue = "1") int page,
+                                                        @RequestParam(defaultValue = "10") int size){
+        return ApiResponse.<Page<PlaylistResponse>>builder()
+                .code(1000)
+                .message("Hehe")
+                .result(playlistService.getUserPlaylists(targetUserId, PageRequest.of(page - 1, size)))
+                .build();
+    }
+
+    @GetMapping("/{playlistId}/songs")
+    ApiResponse<Page<PlaylistSongResponse>> getPlaylistSongs(@PathVariable String playlistId,
+                                                             @RequestParam(defaultValue = "1") int page,
+                                                             @RequestParam(defaultValue = "10") int size){
+        return ApiResponse.<Page<PlaylistSongResponse>>builder()
+                .code(1000)
+                .result(playlistService.getPlaylistSongs(playlistId, PageRequest.of(page - 1, size)))
                 .build();
     }
 }

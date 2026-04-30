@@ -96,7 +96,7 @@ public class CategoryController {
                 .build();
     }
 
-    @PostMapping("/{categoryId}/songs")
+    @PostMapping("/{categoryId}/songs/{songIds}")
     ApiResponse<CategoryResponse> addSongsToCategory(@PathVariable String categoryId,
                                                      @PathVariable List<String> songIds){
         return ApiResponse.<CategoryResponse>builder()

@@ -16,4 +16,5 @@ public class SearchResponse {
     List<SearchSongResponse> songs;
     List<AlbumResponse> albums;
     List<CategoryResponse> categories;
+    List<UserSummaryResponse> users;
 }

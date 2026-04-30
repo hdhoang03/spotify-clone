@@ -1,26 +1,24 @@
 package com.spotify.spotify.dto.response;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.time.LocalDate;
-import java.util.Set;
-
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class UserResponse {
+public class UserProfileResponse {
     String id;
     String username;
     String name;
     String email;
     String avatarUrl;
-    @JsonFormat(pattern = "dd-MM-yyyy")
-    LocalDate dob;
-    Boolean enabled;
-    Set<RoleResponse> roles;
+    String bio;
+    Long followerCount;
+    Long followingCount;
+    Long playlistCount;
+    Long followingArtistCount;
+    Boolean isFollowedByMe;
     boolean isPublicProfile;
 }

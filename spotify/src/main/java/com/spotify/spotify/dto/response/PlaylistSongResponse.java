@@ -3,21 +3,20 @@ package com.spotify.spotify.dto.response;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-@Getter
-@Setter
+import java.time.LocalDate;
+
+@Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class TopStreamResponse {
-//    String songId;
-//    Long count;
-//    String songTitle;
-//    String artistName;
-    String songTitle;
-    String songId;
-    String artistName;
+public class PlaylistSongResponse {
+    String id;
+    String title;
+    String artist;
+    String albumName;
     String coverUrl;
-    Long count;
+    String audioUrl;
     Double duration;
+    LocalDate addedAt;
 }

@@ -84,7 +84,7 @@ public class CategoryService {
         Song song = songRepository.findById(songId)
                 .orElseThrow(() -> new AppException(ErrorCode.SONG_NOT_FOUND));
 
-        if (song.getCategory() != null || !song.getCategory().getId().equals(categoryId)){
+        if (song.getCategory() == null || !song.getCategory().getId().equals(categoryId)){
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
 

@@ -3,14 +3,8 @@ package com.spotify.spotify.service;
 import com.spotify.spotify.dto.response.SearchResponse;
 import com.spotify.spotify.exception.AppException;
 import com.spotify.spotify.exception.ErrorCode;
-import com.spotify.spotify.mapper.AlbumMapper;
-import com.spotify.spotify.mapper.ArtistMapper;
-import com.spotify.spotify.mapper.CategoryMapper;
-import com.spotify.spotify.mapper.SongMapper;
-import com.spotify.spotify.repository.AlbumRepository;
-import com.spotify.spotify.repository.ArtistRepository;
-import com.spotify.spotify.repository.CategoryRepository;
-import com.spotify.spotify.repository.SongRepository;
+import com.spotify.spotify.mapper.*;
+import com.spotify.spotify.repository.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -30,11 +24,13 @@ public class SearchService {
     SongRepository songRepository;
     AlbumRepository albumRepository;
     CategoryRepository categoryRepository;
+    UserRepository userRepository;
 
     ArtistMapper artistMapper;
     SongMapper songMapper;
     AlbumMapper albumMapper;
     CategoryMapper categoryMapper;
+    UserMapper userMapper;
 
     public SearchResponse searchEverything(String keyword){
         Pageable limit = PageRequest.of(0, 5); //Thay Pageable.unpaged() thành limit dể giới hạn kết quả
@@ -58,13 +54,19 @@ public class SearchService {
                         .stream().map(categoryMapper::toCategoryResponseFromProjection).toList()
         );
 
-        CompletableFuture.allOf(artists, songs, albums, categories).join();
+        var users = CompletableFuture.supplyAsync(() ->
+                userRepository.searchUsersForGlobalSearch(keyword, limit)
+                        .stream().map(userMapper::toUserSummaryResponse).toList()
+        );
+
+        CompletableFuture.allOf(artists, songs, albums, categories, users).join();
         try {
             return SearchResponse.builder()
                     .artists(artists.get())
                     .songs(songs.get())
                     .albums(albums.get())
                     .categories(categories.get())
+                    .users(users.get())
                     .build();
         } catch (Exception e){
             log.error("Search failed", e);

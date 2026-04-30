@@ -78,7 +78,7 @@ public class Song {
     @JoinTable(
         name = "song_performers",
         joinColumns = @JoinColumn(name = "song_id"),
-        inverseJoinColumns = @JoinColumn(name = "artist_id"")
+        inverseJoinColumns = @JoinColumn(name = "artist_id")
     )
     @Builder.Default
     Set<Artist> featuredArtists = new HashSet<>();

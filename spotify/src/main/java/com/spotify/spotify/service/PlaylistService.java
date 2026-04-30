@@ -5,13 +5,16 @@ import com.cloudinary.utils.ObjectUtils;
 import com.spotify.spotify.dto.request.PlaylistRequest;
 import com.spotify.spotify.dto.request.PlaylistUpdateRequest;
 import com.spotify.spotify.dto.response.PlaylistResponse;
+import com.spotify.spotify.dto.response.PlaylistSongResponse;
 import com.spotify.spotify.entity.Playlist;
+import com.spotify.spotify.entity.PlaylistSong;
 import com.spotify.spotify.entity.Song;
 import com.spotify.spotify.entity.User;
 import com.spotify.spotify.exception.AppException;
 import com.spotify.spotify.exception.ErrorCode;
 import com.spotify.spotify.mapper.PlaylistMapper;
 import com.spotify.spotify.repository.PlaylistRepository;
+import com.spotify.spotify.repository.PlaylistSongRepository;
 import com.spotify.spotify.repository.SongRepository;
 import com.spotify.spotify.repository.UserRepository;
 import lombok.AccessLevel;
@@ -25,8 +28,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -40,6 +45,7 @@ public class PlaylistService {
     PlaylistRepository playlistRepository;
     SongRepository songRepository;
     Cloudinary cloudinary;
+    PlaylistSongRepository playlistSongRepository;
 
     public PlaylistResponse createPlaylist(PlaylistRequest request){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -53,7 +59,7 @@ public class PlaylistService {
         }
         if (playlist.getIsPublic() == null) playlist.setIsPublic(true); //không gửi param mặc định là true
         playlist.setUser(user);
-        playlist.setSongs(new HashSet<>());
+        playlist.setPlaylistSongs(new HashSet<>());
 
         playlist = playlistRepository.save(playlist);
         return playlistMapper.toPlaylistResponse(playlist);
@@ -78,8 +84,26 @@ public class PlaylistService {
     }
 
     @Transactional
+    public void createDefaultPlaylist(User user){
+        Playlist likedSongs = Playlist.builder()
+                .name("Liked Songs")
+                .description("Your favorite songs")
+                .user(user)
+                .isPublic(false)
+                .isDefault(true)
+                .playlistSongs(new HashSet<>())
+                .createdAt(LocalDateTime.now())
+                .build();
+        playlistRepository.save(likedSongs);
+    }
+
+    @Transactional
     public void deletePlaylist(String playlistId){
         Playlist playlist = getPlayListAndCheckOwnership(playlistId);
+
+        if (Boolean.TRUE.equals(playlist.getIsDefault())) {
+            throw new AppException(ErrorCode.CANNOT_DELETE_DEFAULT_PLAYLIST);
+        }
 
         if (playlist.getCoverUrl() != null){
             deleteFileCloud(playlist.getCoverUrl(), "image");
@@ -105,37 +129,70 @@ public class PlaylistService {
     @Transactional
     public void addSongToPlaylist(String playlistId, String songId){
         Playlist playlist = getPlayListAndCheckOwnership(playlistId);
-
         Song song = songRepository.findById(songId)
                 .orElseThrow(() -> new AppException(ErrorCode.SONG_NOT_FOUND));
-        if (playlist.getSongs().contains(song)){
+
+//        if (playlist.getSongs().contains(song)){
+//            throw new AppException(ErrorCode.SONG_ALREADY_IN_PLAYLIST);
+//        }
+//        playlist.getSongs().add(song);
+
+        if (playlistSongRepository.existsByPlaylistIdAndSongId(playlistId, songId)){
             throw new AppException(ErrorCode.SONG_ALREADY_IN_PLAYLIST);
         }
 
-        playlist.getSongs().add(song);
-        playlistRepository.save(playlist);
+        PlaylistSong playlistSong = PlaylistSong.builder()
+                .playlist(playlist)
+                .song(song)
+                // addedAt sẽ tự động sinh do có @PrePersist
+                .build();
+
+        playlistSongRepository.save(playlistSong);
     }
 
     @Transactional
     public void removeSongFromPlaylist(String playlistId, String songId){
-        Playlist playlist = getPlayListAndCheckOwnership(playlistId);
-        Song song = songRepository.findById(songId)
-                .orElseThrow(() -> new AppException(ErrorCode.SONG_NOT_FOUND));
+        getPlayListAndCheckOwnership(playlistId);
+//        Song song = songRepository.findById(songId)
+//                .orElseThrow(() -> new AppException(ErrorCode.SONG_NOT_FOUND));
+//
+//        boolean removed = playlist.getSongs().remove(song);
+//        if (!removed){
+//            throw new AppException(ErrorCode.SONG_NOT_IN_PLAYLIST);
+//        }
+//
+//        playlistRepository.save(playlist);
 
-        boolean removed = playlist.getSongs().remove(song);
-        if (!removed){
+        if (!playlistSongRepository.existsByPlaylistIdAndSongId(playlistId, songId)){
             throw new AppException(ErrorCode.SONG_NOT_IN_PLAYLIST);
         }
 
-        playlistRepository.save(playlist);
+        playlistSongRepository.deleteByPlaylistIdAndSongId(playlistId, songId);
+    }
+
+    public Page<PlaylistSongResponse> getPlaylistSongs(String playlistId, Pageable pageable){
+        Page<PlaylistSong> playlistSongs = playlistSongRepository.findByPlaylistIdOrderByAddedAtDesc(playlistId, pageable);
+        return playlistSongs.map(ps -> {
+            Song s = ps.getSong();
+
+            return PlaylistSongResponse.builder()
+                    .id(s.getId())
+                    .title(s.getTitle())
+                    .artist(s.getArtist() != null ? s.getArtist().getName() : "Unknown")
+                    .albumName(s.getAlbum() != null ? s.getAlbum().getName() : null)
+                    .coverUrl(s.getCoverUrl())
+                    .audioUrl(s.getAudioUrl())
+                    .duration(s.getDuration())
+                    .addedAt(ps.getAddedAt())
+                    .build();
+        });
     }
 
     public Page<PlaylistResponse> getUserPublicPlaylists(String userId, Pageable pageable){
         if (!userRepository.existsById(userId)){
             throw new AppException(ErrorCode.USER_NOT_EXISTED);
         }
-        return playlistRepository.findByUserIdAndIsPublicTrue(userId, pageable)
-                .map(playlistMapper::toPlaylistResponse);
+        return playlistRepository.findPublicPlaylistsWithCount(userId, pageable);
     }
 
     public Page<PlaylistResponse> getMyPlaylists(Pageable pageable){
@@ -143,8 +200,7 @@ public class PlaylistService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        return playlistRepository.findByUserId(user.getId(), pageable)
-                .map(playlistMapper::toPlaylistDetailResponse);
+        return playlistRepository.findMyPlaylistsWithCount(user.getId(), pageable);
     }
 
     private Playlist getPlayListAndCheckOwnership(String playlistId){
@@ -155,6 +211,22 @@ public class PlaylistService {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
         return playlist;
+    }
+
+    public Page<PlaylistResponse> getUserPlaylists(String targetUserId, Pageable pageable){
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User targetUser = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        boolean isOwner = targetUser.getUsername().equals(username);
+
+        if (isOwner){
+            return playlistRepository.findByUser_Id(targetUserId, pageable)
+                    .map(playlistMapper::toPlaylistResponse);
+        } else {
+            return playlistRepository.findByUser_IdAndIsPublicTrue(targetUserId, pageable)
+                    .map(playlistMapper::toPlaylistResponse);
+        }
     }
 
     private String saveFileCloud(MultipartFile file, String folder){

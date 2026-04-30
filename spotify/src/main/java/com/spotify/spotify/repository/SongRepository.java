@@ -1,5 +1,6 @@
 package com.spotify.spotify.repository;
 
+import com.spotify.spotify.dto.response.GenreStatResponse;
 import com.spotify.spotify.entity.Song;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,12 +25,23 @@ public interface SongRepository extends JpaRepository<Song, String>, JpaSpecific
     int incrementPlayCount(@Param("id") String id); //Cộng 1
 
     List<Song> findByArtist_Id(String artistId);
+
+//    @Query("""
+//        SELECT DISTINCT s FROM Song s
+//        LEFT JOIN s.featureArtists fa
+//        WHERE s.deleted = false
+//        AND (s.artist.id = :artistId OR fa.id = :artistId)
+//    """)
+//    List<Song> findSongsByArtistOrFeatured(@Param("artistId") String artistId);
+
     @Query("SELECT s FROM Song s WHERE s.deleted = false AND s.artist.deleted = false AND LOWER(s.title) LIKE LOWER(CONCAT('%', :keyword, '%'))")
     Page<Song> searchActiveSongByTitle(String keyword, Pageable pageable);
+
     Page<Song> findByAlbum_Id(String albumId, Pageable pageable);
-//    Page<Song> findAllByDeletedFalse(Pageable pageable);
+
     @Query("SELECT s FROM Song s WHERE s.deleted = false AND s.artist.deleted = false")
     Page<Song> findAllActiveSongs(Pageable pageable);
+
     @Query("""
             SELECT s FROM Song s
             LEFT JOIN FETCH s.album
@@ -58,4 +70,16 @@ public interface SongRepository extends JpaRepository<Song, String>, JpaSpecific
             WHERE s.id =:id AND s.likeCount > 0
             """)
     void decrementLikeCount(@Param("id") String id);
+
+    @Query("""
+        SELECT new com.spotify.spotify.dto.response.GenreStatResponse(
+                c.name, COUNT(s.id), ''
+                )
+        FROM Song s
+        JOIN s.category c
+        WHERE s.deleted = false
+        GROUP BY c.id, c.name
+        ORDER BY COUNT(s.id) DESC
+        """)
+    List<GenreStatResponse> countSongsByCategory();
 }

@@ -9,8 +9,8 @@ import com.spotify.spotify.entity.Category;
 import com.spotify.spotify.entity.Song;
 import org.mapstruct.*;
 
-@Mapper(componentModel = "spring",
-        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+@Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+
 public interface SongMapper {
     @Mapping(target = "coverUrl", ignore = true)
     @Mapping(target = "audioUrl", ignore = true)
@@ -24,12 +24,14 @@ public interface SongMapper {
     @Mapping(target = "uploadedBy", ignore = true)
     Song toSong(SongRequest request);
 
-    //dot notation "album.name" có khả năng null pointer nên dùng custom method
+    //dot anotation "album.name" có khả năng null pointer nên dùng custom method
     @Mapping(source = "uploadedBy.username", target = "uploadedBy")
     @Mapping(source = "album", target = "albumName", qualifiedByName = "mapAlbumName")
     @Mapping(source = "album", target = "albumId", qualifiedByName = "mapAlbumId")
     @Mapping(source = "category", target = "category", qualifiedByName = "mapCategoryName")
     @Mapping(source = "artist", target = "artist", qualifiedByName = "mapArtistName")
+    @Mapping(source = "category.id", target = "categoryId")
+    @Mapping(source = "artist.id", target = "artistId")
     SongResponse toSongResponse(Song song);
 
     @Named("toSongSearchResponse")

@@ -29,11 +29,14 @@ public class Playlist {// Cho user tạo playlist thêm/xóa bài, chia sẻ bà
 
     Boolean isPublic = true;
 
-    @ManyToMany
-    @JoinTable(name = "playlist_song",
-            joinColumns = @JoinColumn(name = "playlist_id"),
-            inverseJoinColumns = @JoinColumn(name = "song_id"))
-    Set<Song> songs = new HashSet<>();
+//    @ManyToMany
+//    @JoinTable(name = "playlist_song",
+//            joinColumns = @JoinColumn(name = "playlist_id"),
+//            inverseJoinColumns = @JoinColumn(name = "song_id"))
+//    Set<Song> songs = new HashSet<>();
+
+    @OneToMany(mappedBy = "playlist", cascade = CascadeType.ALL, orphanRemoval = true)
+    Set<PlaylistSong> playlistSongs = new HashSet<>();
 
     @Column(name = "create_at")//sai tên cột nên phải định nghĩa lại mới mapping được, còn không thì drop hoặc sửa tên bảng trong db
     LocalDateTime createdAt;
@@ -41,4 +44,7 @@ public class Playlist {// Cho user tạo playlist thêm/xóa bài, chia sẻ bà
     void onCreate(){
         createdAt = LocalDateTime.now();
     }
+
+    @Builder.Default
+    Boolean isDefault = false;
 }
