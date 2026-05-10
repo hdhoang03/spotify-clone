@@ -119,4 +119,13 @@ public class SongStreamController {
                 .result(songStreamService.getMyTopArtistsOfMonth(month, year))
                 .build();
     }
+
+    @GetMapping("/{songId}/get-valid-stream-count")
+    ApiResponse<Long> getValidStreamCount(@PathVariable String songId){
+        return ApiResponse.<Long>builder()
+                .code(1000)
+                .message("All valid streams")
+                .result(songStreamService.getValidStreamCount(songId))
+                .build();
+    }
 }

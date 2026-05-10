@@ -24,9 +24,11 @@ public class SongResponse {
     String coverUrl;
     String audioUrl;
     String uploadedBy;
-    Double duration; //mới thêm
+    Double duration;
     LocalDateTime createdAt;
     LocalDate releaseDate;
+    Long playCount;
+    Long streamCount;
 //    List<ArtistInfo> featureArtists;
 //    public record ArtistInfo(String id, String name) {}
 }

@@ -21,8 +21,13 @@ public interface SongRepository extends JpaRepository<Song, String>, JpaSpecific
     void incrementPlayCountAmount(@Param("id") String id, @Param("amount") Long amount); //Cộng n lần cùng lúc
 
     @Modifying
-    @Query("UPDATE Song s SET s.playCount = s.playCount + 1 WHERE s.id = :id")
-    int incrementPlayCount(@Param("id") String id); //Cộng 1
+    @Query("UPDATE Song s SET s.playCount = COALESCE(s.playCount, 0) + 1 WHERE s.id = :id")
+    void incrementPlayCount(@Param("id") String id); //Cộng 1
+
+    //COALESCE để chống lỗi NULL
+    @Modifying
+    @Query("UPDATE Song s SET s.streamCount = COALESCE(s.streamCount, 0) + 1 WHERE s.id = :id")
+    void incrementStreamCount(@Param("id") String id);
 
     List<Song> findByArtist_Id(String artistId);
 

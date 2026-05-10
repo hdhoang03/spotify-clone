@@ -18,7 +18,8 @@ import java.util.List;
 
 @Repository
 public interface SongStreamRepository extends JpaRepository<SongStream, String> {
-    Long countBySong_Id(String songId); //đếm lượt stream
+    Long countBySongIdAndValidStreamTrue(String id);
+    Long countBySongId(String songId); //đếm lượt stream
     Page<SongStream> findByUser_IdOrderByCreatedAtDesc(String userId, Pageable pageable);//Lấy danh sách lượt nghe theo user
     Boolean existsByUser_IdAndSong_Id(String userId, String songId);//Kiểm tra user nghe đúng bài đó chưa
 

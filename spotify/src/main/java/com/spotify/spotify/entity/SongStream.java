@@ -12,6 +12,10 @@ import java.time.LocalDateTime;
 @Setter
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@Table(name = "song_streams", indexes = {
+        @Index(name = "idx_user_time", columnList = "user_id, createdAt"),
+        @Index(name = "idx_song_valid", columnList = "song_id, is_valid_stream")
+})
 @NoArgsConstructor
 @AllArgsConstructor
 public class SongStream {
@@ -19,11 +23,11 @@ public class SongStream {
     @GeneratedValue(strategy = GenerationType.UUID)
     String id; //Mỗi lượt nghe là 1 record riêng để chạy analytics
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     User user; //Người nghe bài hát, nếu chưa đăng nhập sẽ không tính lượt stream
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "song_id", nullable = false)
     Song song; //Bài hát được nghe
 
@@ -31,4 +35,16 @@ public class SongStream {
 
     @Column(nullable = false)
     LocalDateTime createdAt;
+
+    @Column(name = "is_valid_stream", nullable = false)
+    @Builder.Default
+    boolean validStream = false;
+
+    @PrePersist
+    void onCreate(){
+        this.createdAt = LocalDateTime.now();
+        if (this.duration != null && this.duration >= 30){
+           this.validStream = true;
+        }
+    }
 }

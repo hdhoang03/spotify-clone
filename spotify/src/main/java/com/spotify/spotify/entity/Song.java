@@ -47,8 +47,13 @@ public class Song {
     //để playcount và likecount để mỗi khi chạy không cần tốn tài nguyên query lại
     @Builder.Default//Để không gán null mà gán là 0
     Long playCount = 0L;
+
+    @Builder.Default
+    Long streamCount = 0L;
+
     @Builder.Default
     Long likeCount = 0L;
+
     Double duration;
 
     @Column(name = "is_deleted")
