@@ -84,8 +84,8 @@ public class SongStreamController {
     }
 
     @GetMapping("/top")
-    ApiResponse<List<TopLikeSongResponse>> getTopStreamSongs(){
-        return ApiResponse.<List<TopLikeSongResponse>>builder()
+    ApiResponse<List<TopStreamResponse>> getTopStreamSongs(){
+        return ApiResponse.<List<TopStreamResponse>>builder()
                 .code(1000)
                 .message("Top songs")
                 .result(songStreamService.getTopStreamSongs())

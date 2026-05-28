@@ -67,7 +67,6 @@ public class PlaylistController {
     ApiResponse<PlaylistResponse> getPlaylist(@PathVariable String playlistId){
         return ApiResponse.<PlaylistResponse>builder()
                 .code(1000)
-//                .message()
                 .result(playlistService.getPlaylist(playlistId))
                 .build();
     }

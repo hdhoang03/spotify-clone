@@ -28,9 +28,10 @@ public interface SongStreamRepository extends JpaRepository<SongStream, String> 
                 CAST(s.createdAt AS LocalDate), COUNT(s)
             )
             FROM SongStream s
-            WHERE s.song.id =:songId AND s.createdAt BETWEEN :start AND :end
+            WHERE s.song.id =:songId AND s.createdAt BETWEEN :start AND :end AND s.validStream = true
             GROUP BY CAST(s.createdAt AS LocalDate)
             ORDER BY CAST(s.createdAt as LocalDate) ASC
+            LIMIT 10
             """)
     List<StreamStatResponse> getStreamStats(@Param("songId") String songId,
                                             @Param("start") LocalDateTime start,
@@ -42,15 +43,17 @@ public interface SongStreamRepository extends JpaRepository<SongStream, String> 
                 s.song.id,
                 s.song.artist.name,
                 s.song.coverUrl,
+                s.song.audioUrl,
                 COUNT(s),
                 s.song.duration
             )
             FROM SongStream s
-            GROUP BY s.song.id
+            WHERE s.validStream = true
+            GROUP BY s.song.id, s.song.title, s.song.artist.name, s.song.coverUrl, s.song.audioUrl, s.song.duration
             ORDER BY COUNT(s) DESC
             LIMIT 10
     """)
-    List<TopLikeSongResponse> findTopStreamSongs();//Top bài hát được nghe nhiều
+    List<TopStreamResponse> findTopStreamSongs();//Top bài hát được nghe nhiều
 
     // Thống kê lượt nghe toàn hệ thống theo khoảng thời gian
     @Query("""
@@ -66,7 +69,9 @@ public interface SongStreamRepository extends JpaRepository<SongStream, String> 
 
     @Query("""
             SELECT COUNT(s) FROM SongStream s
-            WHERE YEAR(s.createdAt) = :year AND MONTH(s.createdAt) = :month
+            WHERE YEAR(s.createdAt) = :year
+            AND MONTH(s.createdAt) = :month
+            AND s.validStream = true
         """)
     Long countStreamsByMonth(@Param("year") int year, @Param("month") int month);
 
@@ -80,14 +85,17 @@ public interface SongStreamRepository extends JpaRepository<SongStream, String> 
                                        @Param("songId") String songId,
                                        Pageable pageable);
 
-
     @Query("""
         SELECT new com.spotify.spotify.dto.response.TopLikeSongResponse(
-            s.song.title, s.song.id, s.song.artist.name, s.song.coverUrl, COUNT(s), s.song.duration
+            s.song.title, s.song.id, s.song.artist.name, s.song.coverUrl, s.song.audioUrl, COUNT(s), s.song.duration
         )
         FROM SongStream s
-        WHERE s.user.id = :userId AND MONTH(s.createdAt) = :month AND YEAR(s.createdAt) = :year
-        GROUP BY s.song.id
+        WHERE s.user.id = :userId
+            AND s.validStream = true
+            AND MONTH(s.createdAt) = :month
+            AND YEAR(s.createdAt) = :year
+            AND s.song.deleted = false
+        GROUP BY s.song.id, s.song.title, s.song.artist.name, s.song.coverUrl, s.song.audioUrl, s.song.duration
         ORDER BY COUNT(s) DESC
         LIMIT 10
     """)
@@ -96,10 +104,12 @@ public interface SongStreamRepository extends JpaRepository<SongStream, String> 
     @Query("""
         SELECT s.song.artist
             FROM SongStream s
-            WHERE s.user.id = :userId AND MONTH(s.createdAt) = :month AND YEAR(s.createdAt) = :year
+            WHERE s.user.id = :userId
+                AND MONTH(s.createdAt) = :month
+                AND YEAR(s.createdAt) = :year
             GROUP BY s.song.artist.id
             ORDER BY COUNT(s) DESC
             LIMIT 5
     """)
-    List<Artist> findMyTopAritstsOfThisMonthEntity(@Param("userId") String userId, @Param("month") int month, @Param("year") int year);
+    List<Artist> findMyTopArtistsOfThisMonthEntity(@Param("userId") String userId, @Param("month") int month, @Param("year") int year);
 }

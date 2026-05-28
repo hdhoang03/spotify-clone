@@ -6,10 +6,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface LikeSongRepository extends JpaRepository<LikeSong, String> {
@@ -28,10 +30,10 @@ public interface LikeSongRepository extends JpaRepository<LikeSong, String> {
 
     @Query("""
             SELECT new com.spotify.spotify.dto.response.TopLikeSongResponse(
-                l.song.title, l.song.id, l.song.artist.name, l.song.coverUrl, COUNT(l), l.song.duration
+                l.song.title, l.song.id, l.song.artist.name, l.song.coverUrl, l.song.audioUrl, COUNT(l), l.song.duration
             )
             FROM LikeSong l
-            GROUP BY l.song.title, l.song.id, l.song.artist.name, l.song.coverUrl, l.song.duration
+            GROUP BY l.song.title, l.song.id, l.song.artist.name, l.song.coverUrl, l.song.duration, l.song.audioUrl
             ORDER BY COUNT(l) DESC
             """)
     Page<TopLikeSongResponse> findTopLikedSongs(Pageable pageable);

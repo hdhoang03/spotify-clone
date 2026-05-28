@@ -16,6 +16,7 @@ public class ArtistResponse {
     String name;
     String description;
     String avatarUrl;
+    Boolean isFollowed;
     Integer followerCount;
     Integer songCount;
     String country;

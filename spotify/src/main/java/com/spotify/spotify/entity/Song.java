@@ -65,7 +65,7 @@ public class Song {
     @OneToMany(mappedBy = "song", cascade = CascadeType.REMOVE)
     Set<LikeSong> likes = new HashSet<>();
 
-    @OneToMany(mappedBy = "song", cascade = CascadeType.REMOVE)//khi xóa bài hát tự động xóa luôn like và stream
+    @OneToMany(mappedBy = "song", cascade = CascadeType.REMOVE)//khi xóa bài hát tự động xóa luôn like và stream 🌟
     Set<SongStream> streams = new HashSet<>();
 
     @PrePersist

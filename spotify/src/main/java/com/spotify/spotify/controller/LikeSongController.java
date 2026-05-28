@@ -48,32 +48,31 @@ public class LikeSongController {
                 .build();
     }
 
-//    @PostMapping("/{songId}")
-//    ApiResponse<LikeSongResponse> likeSong(@PathVariable String songId){
-//        return ApiResponse.<LikeSongResponse>builder()
+    @PostMapping("/{songId}/toggle")
+    ApiResponse<Boolean> toggleLikeSong(@PathVariable String songId){
+        return ApiResponse.<Boolean>builder()
+                .code(1000)
+                .result(likeSongService.toggleLike(songId))
+                .build();
+    }
+
+//    @PostMapping("/{songId}") //bỏ
+//    ApiResponse<Void> likeSong(@PathVariable String songId){
+//        likeSongService.likeSong(songId);
+//        return ApiResponse.<Void>builder()
 //                .code(1000)
 //                .message("Liked this song")
-//                .result(likeSongService.likeSong(songId))
 //                .build();
 //    }
-
-    @PostMapping("/{songId}")
-    ApiResponse<Void> likeSong(@PathVariable String songId){
-        likeSongService.likeSong(songId);
-        return ApiResponse.<Void>builder()
-                .code(1000)
-                .message("Liked this song")
-                .build();
-    }
-
-    @PostMapping("/{songId}/unlike")
-    ApiResponse<Void> unlikeSong(@PathVariable String songId){
-        likeSongService.unlikeSong(songId);
-        return ApiResponse.<Void>builder()
-                .code(1000)
-                .message("Unliked this song")
-                .build();
-    }
+//
+//    @PostMapping("/{songId}/unlike") //bỏ
+//    ApiResponse<Void> unlikeSong(@PathVariable String songId){
+//        likeSongService.unlikeSong(songId);
+//        return ApiResponse.<Void>builder()
+//                .code(1000)
+//                .message("Unliked this song")
+//                .build();
+//    }
 
     @GetMapping("/top")
     ApiResponse<Page<TopLikeSongResponse>> getTopLikedSongs(@RequestParam(defaultValue = "1") int page,

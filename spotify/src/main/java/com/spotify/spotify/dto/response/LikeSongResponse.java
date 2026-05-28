@@ -13,7 +13,8 @@ import java.time.LocalDate;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class LikeSongResponse {
     String likeId;
-    String songId;
-    String userId;
+//    String songId;
+//    String userId;
+    SongResponse song;
     LocalDate likedAt;
 }

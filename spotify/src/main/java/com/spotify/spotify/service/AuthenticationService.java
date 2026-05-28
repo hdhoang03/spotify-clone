@@ -6,6 +6,7 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import com.spotify.spotify.configuration.SecurityConfig;
 import com.spotify.spotify.constaint.PredefinedRole;
 import com.spotify.spotify.dto.event.NotificationEvent;
 import com.spotify.spotify.dto.request.*;
@@ -21,12 +22,15 @@ import com.spotify.spotify.mapper.UserMapper;
 import com.spotify.spotify.repository.InvalidTokenRepository;
 import com.spotify.spotify.repository.RoleRepository;
 import com.spotify.spotify.repository.UserRepository;
+import com.spotify.spotify.repository.httpclient.OutboundIdentityClient;
+import com.spotify.spotify.repository.httpclient.OutboundUserClient;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -48,12 +52,13 @@ public class AuthenticationService {
     UserRepository userRepository;
     InvalidTokenRepository invalidTokenRepository;
     RedisTemplate<String, Object> redisTemplate;
-    EmailService emailService;
     UserMapper userMapper;
     RoleRepository roleRepository;
     ObjectMapper objectMapper;
     KafkaProducerService kafkaProducerService;
-    PlaylistService playlistService;
+//    PlaylistService playlistService;
+    OutboundIdentityClient outboundIdentityClient;
+    OutboundUserClient outboundUserClient;
 
     @NonFinal
     @Value("${jwt.signerKey}")
@@ -66,6 +71,68 @@ public class AuthenticationService {
     @NonFinal
     @Value("${jwt.refreshable-duration}")
     protected long REFRESHABLE_DURATION;
+
+    @NonFinal
+    @Value("${outbound.identity.client-id}")
+    protected String CLIENT_ID;
+
+    @NonFinal
+    @Value("${outbound.identity.client-secret}")
+    protected String CLIENT_SECRET;
+
+    @NonFinal
+    @Value("${outbound.identity.redirect-uri}")
+    protected String REDIRECT_URI;
+
+    @NonFinal
+    protected final String GRANT_TYPE = "authorization_code";
+
+    public AuthenticationResponse outboundAuthenticate(String code){
+        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
+        String randomPassword = UUID.randomUUID().toString();
+
+        var response = outboundIdentityClient.exchangeToken(ExchangeTokenRequest.builder()
+                .grantType(GRANT_TYPE)
+                .code(code)
+                .clientId(CLIENT_ID)
+                .clientSecret(CLIENT_SECRET)
+                .redirectUri(REDIRECT_URI)
+                .build());
+        log.info("TOKEN RESPONSE: {}", response);
+
+        var userInfo = outboundUserClient.getUserInfo("json", response.getAccessToken());
+        log.info("USER INFO: {}", userInfo);
+
+        var user = userRepository.findByEmail(userInfo.getEmail())
+                .orElseGet(() -> {
+                    User newUser = User.builder()
+                            .username(userInfo.getEmail())
+                            .email(userInfo.getEmail())
+                            .name(userInfo.getName())
+                            .avatarUrl(userInfo.getPicture())
+                            .password(passwordEncoder.encode(randomPassword))
+                            .enabled(true)
+                            .build();
+
+                var userRole = roleRepository.findById(PredefinedRole.USER_ROLE).orElse(null);
+                if (userRole != null) {
+                    newUser.setRoles(new HashSet<>(Collections.singletonList(userRole)));
+                }
+
+                    User savedUser = userRepository.save(newUser);
+
+//                    playlistService.createDefaultPlaylist(savedUser);
+
+                    return savedUser;
+                });
+
+        var token = generateToken(user);
+
+        return AuthenticationResponse.builder()
+                .token(token)
+                .authenticated(true)
+                .build();
+    }
 
     public void register(UserCreationRequest request){
         if (userRepository.existsByUsername(request.getUsername())){
@@ -124,7 +191,7 @@ public class AuthenticationService {
         user.setEnabled(true);
 
         userRepository.save(user);
-        playlistService.createDefaultPlaylist(user);
+//        playlistService.createDefaultPlaylist(user);
         redisTemplate.delete(redisKey);
 
         return AuthenticationResponse.builder()
@@ -290,6 +357,8 @@ public class AuthenticationService {
             invalidTokenRepository.save(invalidatedToken);
         } catch (AppException e){
             log.info("Token already expired.");
+        } catch (DataIntegrityViolationException e){ //Bắt lỗi đồng thời khi 2 luông lưu 1 token
+            log.info("Token was already invalidated by another concurrent request.");
         }
     }
 
@@ -297,15 +366,21 @@ public class AuthenticationService {
         var signJWT = verifyToken(request.getToken(), true);
         var jit = signJWT.getJWTClaimsSet().getJWTID();
         var expiryTime = signJWT.getJWTClaimsSet().getExpirationTime();
+        var username = signJWT.getJWTClaimsSet().getSubject();
 
         InvalidatedToken invalidatedToken = InvalidatedToken.builder()
                 .expiryTime(expiryTime)
                 .id(jit)
                 .build();
 
-        invalidTokenRepository.save(invalidatedToken);
-        var username = signJWT.getJWTClaimsSet().getSubject();
-        var user = userRepository.findByUsername(username).orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
+        try {
+            invalidTokenRepository.save(invalidatedToken);
+        } catch (DataIntegrityViolationException e){
+            throw new AppException(ErrorCode.UNAUTHENTICATED); //duplicated do gọi đồng thời thì chặn luôn
+        }
+
+        var user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
 
         var token = generateToken(user);
         return AuthenticationResponse.builder()

@@ -97,6 +97,28 @@ public class LikeSongService {
         songRepository.decrementLikeCount(songId);
     }
 
+    @Transactional
+    public boolean toggleLike(String songId){
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        if (!songRepository.existsById(songId)){
+            throw new AppException(ErrorCode.SONG_NOT_FOUND);
+        }
+
+        if (likeSongRepository.existsByUser_IdAndSong_Id(user.getId(), songId)){
+            likeSongRepository.deleteByUser_IdAndSong_Id(user.getId(), songId);
+            songRepository.decrementLikeCount(songId);
+            return false; //trả về false -> unlike
+        } else {
+            Song song = songRepository.getReferenceById(songId);
+            likeSongRepository.save(new LikeSong(user, song));
+            songRepository.incrementStreamCount(songId);
+            return true; //trả về true -> like
+        }
+    }
+
     public Page<TopLikeSongResponse> getTopLikedSongs(Pageable pageable){
         return likeSongRepository.findTopLikedSongs(pageable);
     }

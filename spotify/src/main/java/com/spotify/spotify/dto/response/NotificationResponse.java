@@ -3,21 +3,20 @@ package com.spotify.spotify.dto.response;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class PlaylistSongResponse {
+public class NotificationResponse {
     String id;
+    String type;
     String title;
-    String artist;
-    String artistId;
-    String albumName;
-    String coverUrl;
-    String audioUrl;
-    Double duration;
-    LocalDate addedAt;
+    String message;
+    String targetUrl;
+    String thumbnail;
+    boolean isRead;
+    LocalDateTime createdAt;
 }

@@ -38,4 +38,12 @@ public interface CategoryRepository extends JpaRepository<Category, String> {
     Page<Category> findAllByDeletedFalse(Pageable pageable);
     Optional<Category> findByIdAndDeletedFalse(String id);
     List<Category> findByTypeAndDeletedFalseOrderByDisplayOrderAsc(CategoryType type);
+
+    @Query("""
+        SELECT c AS category, COUNT(s) AS songCount
+        FROM Category c LEFT JOIN Song s ON s.category.id = c.id
+        WHERE c.deleted = false
+        GROUP BY c.id
+    """)
+    Page<CategoryWithSongCount> findAllWithSongCountByDeletedFalse(Pageable pageable);
 }

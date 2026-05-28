@@ -87,4 +87,11 @@ public interface SongRepository extends JpaRepository<Song, String>, JpaSpecific
         ORDER BY COUNT(s.id) DESC
         """)
     List<GenreStatResponse> countSongsByCategory();
+
+    @Query("""
+        SELECT s FROM Song s
+        WHERE s.artist.id = :artistId AND s.deleted = false
+        ORDER BY s.streamCount DESC
+    """)
+    List<Song> findTopPopularSongsByArtist(@Param("artistId") String artistId);
 }

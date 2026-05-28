@@ -18,12 +18,20 @@ public interface UserRepository extends JpaRepository<User, String> {
     boolean existsByUsername(String username);
     boolean existsByEmail(String email);
     Optional<User> findByEmail(String email);
-    @Query("SELECT u FROM User u WHERE " +
-            "LOWER(u.username) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "LOWER(u.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-            "LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%'))"
-            )
-    Page<User> searchUsersMultiColumns(@Param("keyword") String keyword, Pageable pageable);
+    @Query("""
+        SELECT u FROM User u WHERE
+        (LOWER(u.username) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+         LOWER(u.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+         LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%')))
+        AND NOT EXISTS (
+            SELECT ub FROM UserBlock ub
+            WHERE (ub.blocker.id = :currentUserId AND ub.blocked.id = u.id)
+               OR (ub.blocker.id = u.id AND ub.blocked.id = :currentUserId)
+        )
+    """)
+    Page<User> searchUsersMultiColumns(@Param("keyword") String keyword,
+                                       @Param("currentUserId") String currentUserId,
+                                       Pageable pageable);
 
     @Query("""
         SELECT new com.spotify.spotify.dto.response.UserGrowthResponse(
@@ -36,7 +44,18 @@ public interface UserRepository extends JpaRepository<User, String> {
         """)
     List<UserGrowthResponse> countUserGrowthByYear(@Param("year") int year);
 
-    @Query("SELECT u FROM User u WHERE (LOWER(u.username) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
-            "OR LOWER(u.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND u.enabled = true")
-    Page<User> searchUsersForGlobalSearch(@Param("keyword") String keyword, Pageable pageable);
+    @Query("""
+        SELECT u FROM User u WHERE
+        (LOWER(u.username) LIKE LOWER(CONCAT('%', :keyword, '%')) OR
+         LOWER(u.name) LIKE LOWER(CONCAT('%', :keyword, '%')))
+         AND u.enabled = true
+         AND NOT EXISTS (
+             SELECT ub FROM UserBlock ub
+             WHERE (ub.blocker.id = :currentUserId AND ub.blocked.id = u.id)
+                OR (ub.blocker.id = u.id AND ub.blocked.id = :currentUserId)
+             )
+    """)
+    Page<User> searchUsersForGlobalSearch(@Param("keyword") String keyword,
+                                          @Param("currentUserId") String currentUserId,
+                                          Pageable pageable);
 }

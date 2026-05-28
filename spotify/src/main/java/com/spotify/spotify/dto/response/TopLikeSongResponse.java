@@ -14,6 +14,7 @@ public class TopLikeSongResponse {
     String songId;
     String artistName;
     String coverUrl;
-    Long likeCount;
+    String audioUrl;
+    Long streamCount;
     Double duration;
 }

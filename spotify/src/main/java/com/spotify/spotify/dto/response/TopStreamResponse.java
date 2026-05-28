@@ -10,14 +10,11 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class TopStreamResponse {
-//    String songId;
-//    Long count;
-//    String songTitle;
-//    String artistName;
     String songTitle;
     String songId;
     String artistName;
     String coverUrl;
+    String audioUrl;
     Long count;
     Double duration;
 }

@@ -24,4 +24,12 @@ public interface ArtistFollowRepository extends JpaRepository<ArtistFollow, Stri
     List<ArtistFollow> findAllByArtistId(String artistId); //Lấy danh sách người dùng theo dõi nghệ sĩ
     Long countByArtistId(String artistId); //Đếm số người theo dõi
     Long countByUserId(String userId);
+    boolean existsByUserIdAndArtistId(String userId, String artistId);
+
+    @Query("""
+            SELECT f.user.username
+            FROM ArtistFollow f
+            WHERE f.artist.id = :artistId 
+            """)
+    List<String> findFollowerUsernamesByArtistId(@Param("artistId") String artistId);
 }

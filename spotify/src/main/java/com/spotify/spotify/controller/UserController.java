@@ -59,13 +59,14 @@ public class UserController {
 
     @GetMapping("/list")
     ApiResponse<Page<UserResponse>> searchUser(@RequestParam(defaultValue = "", required = false) String keyword,
+                                               @RequestParam(defaultValue = "", required = false) String currentUserId,
                                                @RequestParam(defaultValue = "1") int page,
                                                @RequestParam(defaultValue = "10") int size){
         Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         return ApiResponse.<Page<UserResponse>>builder()
                 .code(1000)
                 .message("Users have been fetched!")
-                .result(userService.searchUser(keyword, pageable))
+                .result(userService.searchUser(keyword, currentUserId, pageable))
                 .build();
     }
 

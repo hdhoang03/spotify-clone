@@ -15,7 +15,6 @@ public class CategoryRequest {
     MultipartFile coverUrl;
     CategoryType type;
     String description;
-    String backgroundColor;
     Integer displayOrder;
     Boolean active;
 }

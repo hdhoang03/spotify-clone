@@ -3,21 +3,21 @@ package com.spotify.spotify.service;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.spotify.spotify.constaint.NotificationTargetType;
 import com.spotify.spotify.constaint.PredefinedRole;
+import com.spotify.spotify.dto.event.SseNotificationEvent;
 import com.spotify.spotify.dto.request.SupportRequest;
 import com.spotify.spotify.dto.request.UserCreationRequest;
 import com.spotify.spotify.dto.request.UserProfileUpdateRequest;
 import com.spotify.spotify.dto.request.UserUpdateRequest;
-import com.spotify.spotify.dto.response.CloudinaryResponse;
-import com.spotify.spotify.dto.response.UserProfileResponse;
-import com.spotify.spotify.dto.response.UserResponse;
-import com.spotify.spotify.dto.response.UserSummaryResponse;
+import com.spotify.spotify.dto.response.*;
 import com.spotify.spotify.entity.Role;
 import com.spotify.spotify.entity.User;
 import com.spotify.spotify.entity.UserBlock;
 import com.spotify.spotify.entity.UserFollow;
 import com.spotify.spotify.exception.AppException;
 import com.spotify.spotify.exception.ErrorCode;
+import com.spotify.spotify.kafka.KafkaProducerService;
 import com.spotify.spotify.mapper.UserMapper;
 import com.spotify.spotify.repository.*;
 import lombok.AccessLevel;
@@ -34,6 +34,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -53,7 +54,7 @@ public class UserService {
     Cloudinary cloudinary;
     EmailService emailService;
     UserBlockRepository userBlockRepository;
-    PlaylistService playlistService;
+    KafkaProducerService kafkaProducerService;
 
     public UserResponse createUser(UserCreationRequest request){
         if (userRepository.existsByUsername(request.getUsername())){
@@ -69,7 +70,7 @@ public class UserService {
 
         try {
             user = userRepository.save(user);
-            playlistService.createDefaultPlaylist(user);
+//            playlistService.createDefaultPlaylist(user);
         } catch (DataIntegrityViolationException e){
             if (userRepository.existsByEmail(request.getEmail())){
                 throw new AppException(ErrorCode.EMAIL_EXISTED);
@@ -102,19 +103,14 @@ public class UserService {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    public Page<UserResponse> searchUser(String keyword, Pageable pageable){
+    public Page<UserResponse> searchUser(String keyword, String currentUserId, Pageable pageable){
         if (keyword == null || keyword.trim().isEmpty()){
             return userRepository.findAll(pageable)
                     .map(userMapper::toUserResponse);
         }
 
-        return userRepository.searchUsersMultiColumns(keyword.trim(), pageable)
+        return userRepository.searchUsersMultiColumns(keyword.trim(), currentUserId, pageable)
                 .map(userMapper::toUserResponse);
-
-//        return (keyword != null && !keyword.isBlank()
-//                ? userRepository.searchUsersMultiColumns(keyword, pageable)
-//                : userRepository.findAll(pageable))
-//                .map(userMapper::toUserResponse);
     }
 
     public UserResponse getMyInfo(){
@@ -231,6 +227,23 @@ public class UserService {
 
             currentUser.setFollowingCount(currentUser.getFollowingCount() + 1);
             targetUser.setFollowerCount(targetUser.getFollowerCount() + 1);
+
+            NotificationResponse payload = NotificationResponse.builder()
+                    .type("NEW_FOLLOWER")
+                    .title("New Follower")
+                    .message(currentUser.getName() + " started follow you.")
+                    .thumbnail(currentUser.getAvatarUrl())
+                    .targetUrl("/profile/" + currentUser.getId())
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            SseNotificationEvent event = SseNotificationEvent.builder()
+                    .targetType(NotificationTargetType.SPECIFIC_USER)
+                    .targetId(targetUser.getUsername())
+                    .notificationPayload(payload)
+                    .build();
+
+            kafkaProducerService.sendMessage("sse_topic", event);
 
             userRepository.save(currentUser);
             userRepository.save(targetUser);

@@ -13,6 +13,7 @@ import com.spotify.spotify.exception.ErrorCode;
 import com.spotify.spotify.mapper.CategoryMapper;
 import com.spotify.spotify.repository.CategoryRepository;
 import com.spotify.spotify.repository.SongRepository;
+import com.spotify.spotify.repository.CategoryRepository.CategoryWithSongCount;
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -92,10 +93,13 @@ public class CategoryService {
         songRepository.save(song);
     }
 
-    public Page<CategoryResponse> getAllCategories(Pageable pageable){
-        return categoryRepository.findAllByDeletedFalse(pageable)
-                .map(categoryMapper::toCategoryResponse);
-    }
+        public Page<CategoryResponse> getAllCategories(Pageable pageable){
+//            return categoryRepository.findAllByDeletedFalse(pageable)
+//                    .map(categoryMapper::toCategoryResponse);
+            Page<CategoryWithSongCount> projections = categoryRepository.findAllWithSongCountByDeletedFalse(pageable);
+
+            return projections.map(categoryMapper::toCategoryResponseFromProjection);
+        }
 
     public CategoryResponse getCategoryById(String id){
         Category category = categoryRepository.findByIdAndDeletedFalse(id)

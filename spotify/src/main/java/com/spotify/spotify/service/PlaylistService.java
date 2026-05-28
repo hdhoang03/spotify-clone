@@ -13,10 +13,7 @@ import com.spotify.spotify.entity.User;
 import com.spotify.spotify.exception.AppException;
 import com.spotify.spotify.exception.ErrorCode;
 import com.spotify.spotify.mapper.PlaylistMapper;
-import com.spotify.spotify.repository.PlaylistRepository;
-import com.spotify.spotify.repository.PlaylistSongRepository;
-import com.spotify.spotify.repository.SongRepository;
-import com.spotify.spotify.repository.UserRepository;
+import com.spotify.spotify.repository.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -29,9 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.WeakHashMap;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -83,19 +78,19 @@ public class PlaylistService {
         return playlistMapper.toPlaylistResponse(playlist);
     }
 
-    @Transactional
-    public void createDefaultPlaylist(User user){
-        Playlist likedSongs = Playlist.builder()
-                .name("Liked Songs")
-                .description("Your favorite songs")
-                .user(user)
-                .isPublic(false)
-                .isDefault(true)
-                .playlistSongs(new HashSet<>())
-                .createdAt(LocalDateTime.now())
-                .build();
-        playlistRepository.save(likedSongs);
-    }
+//    @Transactional
+//    public void createDefaultPlaylist(User user){
+//        Playlist likedSongs = Playlist.builder()
+//                .name("Liked Songs")
+//                .description("Your favorite songs")
+//                .user(user)
+//                .isPublic(false)
+//                .isDefault(true)
+//                .playlistSongs(new HashSet<>())
+//                .createdAt(LocalDateTime.now())
+//                .build();
+//        playlistRepository.save(likedSongs);
+//    }
 
     @Transactional
     public void deletePlaylist(String playlistId){
@@ -179,6 +174,7 @@ public class PlaylistService {
                     .id(s.getId())
                     .title(s.getTitle())
                     .artist(s.getArtist() != null ? s.getArtist().getName() : "Unknown")
+                    .artistId(s.getArtist().getId())
                     .albumName(s.getAlbum() != null ? s.getAlbum().getName() : null)
                     .coverUrl(s.getCoverUrl())
                     .audioUrl(s.getAudioUrl())

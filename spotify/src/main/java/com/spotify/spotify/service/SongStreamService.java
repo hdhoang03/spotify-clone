@@ -193,7 +193,7 @@ public class SongStreamService {
         return songStreamRepository.getStreamStats(songId, startDateTime, endDateTime);
     }
 
-    public List<TopLikeSongResponse> getTopStreamSongs(){ //Top bài hát nghe nhiều
+    public List<TopStreamResponse> getTopStreamSongs(){ //Top bài hát nghe nhiều
         return songStreamRepository.findTopStreamSongs();
     }
 
@@ -210,7 +210,7 @@ public class SongStreamService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        List<Artist> topArtists = songStreamRepository.findMyTopAritstsOfThisMonthEntity(user.getId(), month, year);
+        List<Artist> topArtists = songStreamRepository.findMyTopArtistsOfThisMonthEntity(user.getId(), month, year);
 
         return topArtists.stream()
                 .map(artistMapper::toArtistResponse)

@@ -6,10 +6,13 @@ import com.spotify.spotify.dto.request.ArtistRequest;
 import com.spotify.spotify.dto.response.ArtistResponse;
 import com.spotify.spotify.entity.Artist;
 import com.spotify.spotify.entity.Song;
+import com.spotify.spotify.entity.User;
 import com.spotify.spotify.exception.AppException;
 import com.spotify.spotify.exception.ErrorCode;
 import com.spotify.spotify.mapper.ArtistMapper;
+import com.spotify.spotify.repository.ArtistFollowRepository;
 import com.spotify.spotify.repository.ArtistRepository;
+import com.spotify.spotify.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -18,6 +21,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,6 +32,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -37,7 +42,9 @@ import java.util.stream.Collectors;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
 public class ArtistService {
+    ArtistFollowRepository artistFollowRepository;
     ArtistRepository artistRepository;
+    UserRepository userRepository;
     ArtistMapper artistMapper;
     Cloudinary cloudinary;
 
@@ -119,7 +126,18 @@ public class ArtistService {
     public ArtistResponse getArtistById(String id){
         Artist artist = artistRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ARTIST_NOT_FOUND));
-        return artistMapper.toArtistResponse(artist);
+
+        ArtistResponse response = artistMapper.toArtistResponse(artist);
+        boolean isFollowed = false;
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        if (username != null && !username.equals("anonymousUser")){
+            Optional<User> userOpt = userRepository.findByUsername(username);
+            if (userOpt.isPresent()){
+                isFollowed = artistFollowRepository.existsByUserIdAndArtistId(userOpt.get().getId(), id);
+            }
+        }
+        response.setIsFollowed(isFollowed);
+        return response;
     }
 
     public Page<ArtistResponse> searchArtists(String keyword, boolean isDeleted, Pageable pageable){
@@ -129,7 +147,7 @@ public class ArtistService {
 
         return projections.map(projection -> {
             ArtistResponse response = artistMapper.toArtistResponse(projection.getArtist());
-            response.setSongCount(projection.getSongCount() != null ? projection    .getSongCount().intValue() : 0);
+            response.setSongCount(projection.getSongCount() != null ? projection.getSongCount().intValue() : 0);
             return response;
         });
     }

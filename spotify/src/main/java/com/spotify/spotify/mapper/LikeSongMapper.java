@@ -4,10 +4,8 @@ import com.spotify.spotify.entity.LikeSong;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = {SongMapper.class})
 public interface LikeSongMapper {
     @Mapping(source = "id", target = "likeId")
-    @Mapping(source = "song.id", target = "songId")
-    @Mapping(source = "user.id", target = "userId")
     LikeSongResponse toLikeSongResponse(LikeSong likeSong);
 }

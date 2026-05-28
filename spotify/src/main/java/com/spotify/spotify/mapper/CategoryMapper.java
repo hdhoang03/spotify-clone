@@ -22,7 +22,6 @@ public interface CategoryMapper {
     @Mapping(target = "id", source = "projection.category.id")
     @Mapping(target = "name", source = "projection.category.name")
     @Mapping(target = "description", source = "projection.category.description")
-    @Mapping(target = "backgroundColor", source = "projection.category.backgroundColor")
     @Mapping(target = "coverUrl", source = "projection.category.coverUrl")
     @Mapping(target = "type", source = "projection.category.type")
     @Mapping(target = "songCount", source = "projection.songCount")

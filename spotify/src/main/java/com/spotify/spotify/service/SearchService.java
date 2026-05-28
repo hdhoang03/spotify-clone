@@ -1,6 +1,7 @@
 package com.spotify.spotify.service;
 
 import com.spotify.spotify.dto.response.SearchResponse;
+import com.spotify.spotify.entity.User;
 import com.spotify.spotify.exception.AppException;
 import com.spotify.spotify.exception.ErrorCode;
 import com.spotify.spotify.mapper.*;
@@ -11,6 +12,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.CompletableFuture;
@@ -33,6 +35,17 @@ public class SearchService {
     UserMapper userMapper;
 
     public SearchResponse searchEverything(String keyword){
+        String currentUserId = null;
+        try {
+            String username = SecurityContextHolder.getContext().getAuthentication().getName();
+            User currentUser = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+            if (currentUser != null){
+                currentUserId = currentUser.getId();
+            }
+        } catch (Exception e){
+            log.warn("Anonymous user is searching, currentUserId will be null");
+        }
         Pageable limit = PageRequest.of(0, 5); //Thay Pageable.unpaged() thành limit dể giới hạn kết quả
         var artists = CompletableFuture.supplyAsync(() ->
                 artistRepository.findByNameContainingIgnoreCaseAndDeleted(keyword, false, limit)
@@ -54,8 +67,9 @@ public class SearchService {
                         .stream().map(categoryMapper::toCategoryResponseFromProjection).toList()
         );
 
+        final String finalCurrentUserId = currentUserId;
         var users = CompletableFuture.supplyAsync(() ->
-                userRepository.searchUsersForGlobalSearch(keyword, limit)
+                userRepository.searchUsersForGlobalSearch(keyword, finalCurrentUserId, limit)
                         .stream().map(userMapper::toUserSummaryResponse).toList()
         );
 

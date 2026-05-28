@@ -16,7 +16,6 @@ public class CategoryResponse {
     String name;
     String coverUrl;
     String description;
-    String backgroundColor;
     CategoryType type;
     Integer songCount;
     Boolean active;

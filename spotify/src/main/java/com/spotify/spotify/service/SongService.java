@@ -2,12 +2,16 @@ package com.spotify.spotify.service;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+import com.spotify.spotify.constaint.NotificationTargetType;
+import com.spotify.spotify.dto.event.SseNotificationEvent;
 import com.spotify.spotify.dto.request.SongRequest;
 import com.spotify.spotify.dto.response.CloudinaryResponse;
+import com.spotify.spotify.dto.response.NotificationResponse;
 import com.spotify.spotify.dto.response.SongResponse;
 import com.spotify.spotify.entity.*;
 import com.spotify.spotify.exception.AppException;
 import com.spotify.spotify.exception.ErrorCode;
+import com.spotify.spotify.kafka.KafkaProducerService;
 import com.spotify.spotify.mapper.SongMapper;
 import com.spotify.spotify.repository.*;
 import lombok.AccessLevel;
@@ -32,6 +36,7 @@ import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -45,6 +50,7 @@ public class SongService {
     AlbumRepository albumRepository;
     ArtistRepository artistRepository;
     CategoryRepository categoryRepository;
+    KafkaProducerService kafkaProducerService;
     SongMapper songMapper;
     Cloudinary cloudinary;
 
@@ -93,6 +99,17 @@ public class SongService {
         }
 
         song = songRepository.save(song);
+        //Hàm bắn thông báo khi có bài hát mới
+        try {
+            this.sendNewSongNotificationViaKafka(
+                    artist.getId(),
+                    artist.getName(),
+                    song.getTitle(),
+                    song.getCoverUrl()
+            );
+        } catch (Exception e) {
+            log.error("Error while sending song notification via Kafka ", e);
+        }
         return songMapper.toSongResponse(song);
     }
 
@@ -153,11 +170,11 @@ public class SongService {
                 .map(songMapper::toSongResponse);
     }
 
-    public List<SongResponse> getSongByArtist(String artistId){
-        return songRepository.findByArtist_Id(artistId).stream()
-                .map(songMapper::toSongResponse)
-                .toList();
-    }
+//    public List<SongResponse> getSongByArtist(String artistId){
+//        return songRepository.findByArtist_Id(artistId).stream()
+//                .map(songMapper::toSongResponse)
+//                .toList();
+//    }
 
     public SongResponse getSong(String id){
         Song song = songRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.SONG_NOT_FOUND));
@@ -167,6 +184,13 @@ public class SongService {
     public List<SongResponse> getAllSongsByDay(){
         return songRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))
                 .stream()
+                .map(songMapper::toSongResponse)
+                .toList();
+    }
+
+    public List<SongResponse> getSongByArtist(String artistId){
+        List<Song> songs = songRepository.findTopPopularSongsByArtist(artistId);
+        return songs.stream()
                 .map(songMapper::toSongResponse)
                 .toList();
     }
@@ -203,6 +227,26 @@ public class SongService {
          }
 
          songRepository.delete(song);
+    }
+
+    public void sendNewSongNotificationViaKafka(String artistId, String artistName, String songTitle, String coverUrl){
+        NotificationResponse payload = NotificationResponse.builder()
+                .id(UUID.randomUUID().toString())
+                .type("NEW_SONG")
+                .title("SpringTunes: Nhạc mới từ " + artistName)
+                .message(artistName + " vừa phát hành nhạc mới " + songTitle)
+                .targetUrl("/artist/" + artistId)
+                .thumbnail(coverUrl)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        SseNotificationEvent event = SseNotificationEvent.builder()
+                .targetType(NotificationTargetType.ARTIST_FANS)
+                .targetId(artistId)
+                .notificationPayload(payload)
+                .build();
+
+        kafkaProducerService.sendMessage("sse_topic", event);
     }
 
     public Page<SongResponse> searchSongs(String keyword, String artist, String category, Integer year, boolean isDeleted, Pageable pageable){
