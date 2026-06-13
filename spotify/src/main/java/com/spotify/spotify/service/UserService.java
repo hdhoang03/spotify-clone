@@ -24,6 +24,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -55,8 +57,13 @@ public class UserService {
     EmailService emailService;
     UserBlockRepository userBlockRepository;
     KafkaProducerService kafkaProducerService;
+//    CaptchaService captchaService;
 
+    @PreAuthorize("hasRole('ADMIN')")
     public UserResponse createUser(UserCreationRequest request){
+//        if (!captchaService.verifyCaptcha(request.getCaptchaToken())){
+//            throw new AppException(ErrorCode.INVALID_CAPTCHA);
+//        }
         if (userRepository.existsByUsername(request.getUsername())){
             throw new AppException(ErrorCode.USER_ALREADY_EXIST);
         }
@@ -79,6 +86,7 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
+    @CacheEvict(value = "user_profile", allEntries = true)
     public UserResponse updateUser(UserUpdateRequest request, String userId){
         User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found."));
 
@@ -113,6 +121,7 @@ public class UserService {
                 .map(userMapper::toUserResponse);
     }
 
+//    @Cacheable(value = "my_info")
     public UserResponse getMyInfo(){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
@@ -146,53 +155,111 @@ public class UserService {
         return newStatus;
     }
 
+    //Vì userId có thể là chữ "me", ta phải dùng SpEL để ép nó thành username thực sự
+    // nếu không User A gọi "me", User B cũng gọi "me" sẽ bị trả về nhầm Profile của A.
+    @Cacheable(value = "user_profile", key = "#userId == 'me' ? T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName() : #userId")
     public UserProfileResponse getUserProfile(String userId){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User currentUser = userRepository.findByUsername(username)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        User targetUser = userRepository.findByUsername(username)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        User targetUser;
 
-        if (currentUser != null && !currentUser.getId().equals(userId)) { //Kiểm tra chặn
-            boolean isBlocked = userBlockRepository.existsBlockBetweenUsers(currentUser.getId(), targetUser.getId());
-            if (isBlocked) {
-                // Giả vờ như user này không tồn tại (đúng chuẩn tàng hình)
-                throw new AppException(ErrorCode.USER_NOT_EXISTED);
-            }
-        }
-
-//        User targetUser = userRepository.findById(userId)
-//                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-
+        // 1. Xác định đúng targetUser ngay từ đầu
         if ("me".equals(userId)) {
-            if (currentUser == null) throw new AppException(ErrorCode.UNAUTHENTICATED);
             targetUser = currentUser;
         } else {
             targetUser = userRepository.findById(userId)
                     .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         }
 
-        boolean isOwner = currentUser != null && currentUser.getUsername().equals(targetUser.getUsername());
+        boolean isOwner = currentUser.getId().equals(targetUser.getId());
+
+        // 2. Kiểm tra chặn (chỉ cần thiết khi xem profile người khác)
+        if (!isOwner) {
+            boolean isBlocked = userBlockRepository.existsBlockBetweenUsers(currentUser.getId(), targetUser.getId());
+            if (isBlocked) {
+                throw new AppException(ErrorCode.USER_NOT_EXISTED);
+            }
+        }
+
+        // 3. Kiểm tra quyền riêng tư
         if (!isOwner && !targetUser.getIsPublicProfile()){
             throw new AppException(ErrorCode.USER_PROFILE_PRIVATE);
         }
 
+        // 4. Query các thông số đếm thực tế
         long playlistCount = isOwner
-                ? playlistRepository.countByUser_Id(userId)
-                : playlistRepository.countByUser_IdAndIsPublicTrue(userId);
+                ? playlistRepository.countByUser_Id(targetUser.getId())
+                : playlistRepository.countByUser_IdAndIsPublicTrue(targetUser.getId());
 
-        long followedArtistsCount = artistFollowRepository.countByUserId(userId);
+        long followedArtistsCount = artistFollowRepository.countByUserId(targetUser.getId());
 
+        // ĐẾM ĐỘNG TRỰC TIẾP TỪ BẢNG FOLLOW ĐỂ ĐẢM BẢO CHÍNH XÁC 100%
+        long realFollowerCount = userFollowRepository.countByFollowing_Id(targetUser.getId());
+        long realFollowingCount = userFollowRepository.countByFollower_Id(targetUser.getId());
+
+        // 5. Build Response
         UserProfileResponse response = userMapper.toUserProfileResponse(targetUser);
         response.setPlaylistCount(playlistCount);
         response.setFollowingArtistCount(followedArtistsCount);
+        response.setFollowerCount(realFollowerCount); // Ghi đè lại số liệu chuẩn
+        response.setFollowingCount(realFollowingCount); // Ghi đè lại số liệu chuẩn
 
-        if (currentUser != null & !isOwner){
-            response.setIsFollowedByMe(userFollowRepository.existsByFollower_IdAndFollowing_Id(currentUser.getId(), userId));
+        if (!isOwner){
+            response.setIsFollowedByMe(userFollowRepository.existsByFollower_IdAndFollowing_Id(currentUser.getId(), targetUser.getId()));
         }
+
         return response;
     }
+
+//    public UserProfileResponse getUserProfile(String userId){
+//        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+//        User currentUser = userRepository.findByUsername(username)
+//                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+//
+//        User targetUser = userRepository.findByUsername(username)
+//                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+//
+//        if (currentUser != null && !currentUser.getId().equals(userId)) { //Kiểm tra chặn
+//            boolean isBlocked = userBlockRepository.existsBlockBetweenUsers(currentUser.getId(), targetUser.getId());
+//            if (isBlocked) {
+//                // Giả vờ như user này không tồn tại (đúng chuẩn tàng hình)
+//                throw new AppException(ErrorCode.USER_NOT_EXISTED);
+//            }
+//        }
+//
+////        User targetUser = userRepository.findById(userId)
+////                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+//
+//        if ("me".equals(userId)) {
+//            if (currentUser == null) throw new AppException(ErrorCode.UNAUTHENTICATED);
+//            targetUser = currentUser;
+//        } else {
+//            targetUser = userRepository.findById(userId)
+//                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+//        }
+//
+//        boolean isOwner = currentUser != null && currentUser.getUsername().equals(targetUser.getUsername());
+//        if (!isOwner && !targetUser.getIsPublicProfile()){
+//            throw new AppException(ErrorCode.USER_PROFILE_PRIVATE);
+//        }
+//
+//        long playlistCount = isOwner
+//                ? playlistRepository.countByUser_Id(userId)
+//                : playlistRepository.countByUser_IdAndIsPublicTrue(userId);
+//
+//        long followedArtistsCount = artistFollowRepository.countByUserId(userId);
+//
+//        UserProfileResponse response = userMapper.toUserProfileResponse(targetUser);
+//        response.setPlaylistCount(playlistCount);
+//        response.setFollowingArtistCount(followedArtistsCount);
+//
+//        if (currentUser != null & !isOwner){
+//            response.setIsFollowedByMe(userFollowRepository.existsByFollower_IdAndFollowing_Id(currentUser.getId(), userId));
+//        }
+//        return response;
+//    }
 
     @Transactional
     public boolean toggleFollowUser(String targetUserId){
@@ -312,6 +379,31 @@ public class UserService {
                         .build());
     }
 
+    public boolean isCurrentlyPremium(User user){
+        if (!user.getIsPremium()){
+            return false;
+        }
+
+        if (user.getPremiumExpiryDate() != null){
+            if (user.getPremiumExpiryDate().isAfter(LocalDateTime.now())){
+                return true;
+            } else {
+                user.setIsPremium(false);
+                user.setPremiumExpiryDate(null);
+                userRepository.save(user);
+                return false;
+            }
+        }
+        return false;
+    }
+
+    public boolean checkPremiumByUsername(String username){
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        return isCurrentlyPremium(user);
+    }
+
     private String getPublicIdFromUrl(String url){
         if (url == null || url.isEmpty() || url.contains("ui-avatars")) return null;
         try {
@@ -370,6 +462,7 @@ public class UserService {
         }
     }
 
+    @CacheEvict(value = "user_profile", allEntries = true)
     @Transactional
     public UserProfileResponse updateMyProfile(UserProfileUpdateRequest request){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();

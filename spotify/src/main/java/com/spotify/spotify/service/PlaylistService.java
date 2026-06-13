@@ -18,6 +18,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -42,6 +44,7 @@ public class PlaylistService {
     Cloudinary cloudinary;
     PlaylistSongRepository playlistSongRepository;
 
+    @CacheEvict(value = {"playlist_detail", "playlist_songs", "user_playlists", "my_playlists"}, allEntries = true)
     public PlaylistResponse createPlaylist(PlaylistRequest request){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
@@ -60,6 +63,7 @@ public class PlaylistService {
         return playlistMapper.toPlaylistResponse(playlist);
     }
 
+    @CacheEvict(value = {"playlist_detail", "playlist_songs", "user_playlists", "my_playlists"}, allEntries = true)
     @Transactional
     public PlaylistResponse updatePlaylist(String playlistId, PlaylistUpdateRequest request){
         Playlist playlist = getPlayListAndCheckOwnership(playlistId);
@@ -92,6 +96,7 @@ public class PlaylistService {
 //        playlistRepository.save(likedSongs);
 //    }
 
+    @CacheEvict(value = {"playlist_detail", "playlist_songs", "user_playlists", "my_playlists"}, allEntries = true)
     @Transactional
     public void deletePlaylist(String playlistId){
         Playlist playlist = getPlayListAndCheckOwnership(playlistId);
@@ -107,6 +112,7 @@ public class PlaylistService {
         playlistRepository.delete(playlist);
     }
 
+    @Cacheable(value = "playlist_detail", key = "#playlistId")
     public PlaylistResponse getPlaylist(String playlistId){
         Playlist playlist = playlistRepository.findById(playlistId)
                 .orElseThrow(() -> new AppException(ErrorCode.PLAY_LIST_NOT_FOUND));
@@ -121,6 +127,7 @@ public class PlaylistService {
         return playlistMapper.toPlaylistResponse(playlist);
     }
 
+    @CacheEvict(value = {"playlist_detail", "playlist_songs", "user_playlists", "my_playlists"}, allEntries = true)
     @Transactional
     public void addSongToPlaylist(String playlistId, String songId){
         Playlist playlist = getPlayListAndCheckOwnership(playlistId);
@@ -145,6 +152,7 @@ public class PlaylistService {
         playlistSongRepository.save(playlistSong);
     }
 
+    @CacheEvict(value = {"playlist_detail", "playlist_songs", "user_playlists", "my_playlists"}, allEntries = true)
     @Transactional
     public void removeSongFromPlaylist(String playlistId, String songId){
         getPlayListAndCheckOwnership(playlistId);
@@ -165,6 +173,7 @@ public class PlaylistService {
         playlistSongRepository.deleteByPlaylistIdAndSongId(playlistId, songId);
     }
 
+    @Cacheable(value = "playlist_songs", key = "#playlistId + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<PlaylistSongResponse> getPlaylistSongs(String playlistId, Pageable pageable){
         Page<PlaylistSong> playlistSongs = playlistSongRepository.findByPlaylistIdOrderByAddedAtDesc(playlistId, pageable);
         return playlistSongs.map(ps -> {
@@ -184,6 +193,7 @@ public class PlaylistService {
         });
     }
 
+    @Cacheable(value = "user_playlists", key = "#userId + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<PlaylistResponse> getUserPublicPlaylists(String userId, Pageable pageable){
         if (!userRepository.existsById(userId)){
             throw new AppException(ErrorCode.USER_NOT_EXISTED);
@@ -191,6 +201,7 @@ public class PlaylistService {
         return playlistRepository.findPublicPlaylistsWithCount(userId, pageable);
     }
 
+    @Cacheable(value = "my_playlists", key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName() + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<PlaylistResponse> getMyPlaylists(Pageable pageable){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
@@ -209,6 +220,7 @@ public class PlaylistService {
         return playlist;
     }
 
+    @Cacheable(value = "user_playlists", key = "#targetUserId + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<PlaylistResponse> getUserPlaylists(String targetUserId, Pageable pageable){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User targetUser = userRepository.findById(targetUserId)

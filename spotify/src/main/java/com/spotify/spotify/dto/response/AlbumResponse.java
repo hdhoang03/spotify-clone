@@ -3,6 +3,7 @@ package com.spotify.spotify.dto.response;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.Set;
 
@@ -11,11 +12,11 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class AlbumResponse {
+public class AlbumResponse implements Serializable {
     String id;
     String name;
     String description;
-    String avatarUrl;//có gì sửa sau
+    String albumUrl;
     Integer songCount;
     String artistName;
     LocalDate releaseDate;

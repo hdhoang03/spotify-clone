@@ -3,6 +3,7 @@ package com.spotify.spotify.dto.response;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.io.Serializable;
 import java.util.List;
 
 @Setter
@@ -11,7 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class SearchResponse {
+public class SearchResponse implements Serializable {
     List<ArtistResponse> artists;
     List<SearchSongResponse> songs;
     List<AlbumResponse> albums;

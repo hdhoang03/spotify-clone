@@ -13,8 +13,6 @@ public interface AlbumMapper {
     @Mapping(target = "albumUrl", ignore = true)
     Album toAlbum(AlbumRequest request);
 
-    @Mapping(source = "albumUrl", target = "avatarUrl")
-//    @Mapping(target = "songs", ignore = true)
     AlbumResponse toAlbumResponse(Album album);
 
     @Named("toAlbumSummary")

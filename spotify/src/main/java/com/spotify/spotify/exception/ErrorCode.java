@@ -46,6 +46,9 @@ public enum ErrorCode {
     INVALID_REQUEST(1030, "Invalid request", HttpStatus.BAD_REQUEST),
     CANNOT_DELETE_DEFAULT_PLAYLIST(1031, "Can't delete default playlist", HttpStatus.BAD_REQUEST),
     NOTIFICATION_NOT_FOUND(1032, "Notification not found", HttpStatus.NOT_FOUND),
+    LYRICS_NOT_FOUND(1033, "Lyrics not found", HttpStatus.NOT_FOUND),
+    ORDER_CODE_NOT_FOUND(1034, "Order code not found", HttpStatus.NOT_FOUND),
+    INVALID_CAPTCHA(1035, "Invalid captcha", HttpStatus.BAD_REQUEST),
     ;
     int code;
     String message;

@@ -18,6 +18,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -34,9 +36,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -56,12 +56,14 @@ public class SongService {
 
     private static final String UPLOAD_DIR = "uploads/";
 
+    @CacheEvict(value = {"song_detail", "songs_page", "songs_by_album", "songs_by_category", "songs_by_day", "get_songs_artist", "top_streamed_songs", "top_liked_songs"}, allEntries = true)
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public SongResponse createSong(SongRequest request){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        Song song = songMapper.toSong(request);
 
         Artist artist = artistRepository.findById(request.getArtistId())
                 .orElseThrow(() -> new AppException(ErrorCode.ARTIST_NOT_FOUND));
@@ -78,7 +80,11 @@ public class SongService {
                     .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
         }
 
-        Song song = songMapper.toSong(request);
+        if (request.getFeaturedArtistIds() != null && !request.getFeaturedArtistIds().isEmpty()){
+            Set<Artist> featuredArtists = new HashSet<>(artistRepository.findAllById(request.getFeaturedArtistIds()));
+            song.setFeaturedArtists(featuredArtists);
+        }
+
         CloudinaryResponse coverPath = saveFileCloud(request.getCoverUrl(), "covers");
         CloudinaryResponse audioPath = saveFileCloud(request.getAudioUrl(), "audios");
 
@@ -113,6 +119,7 @@ public class SongService {
         return songMapper.toSongResponse(song);
     }
 
+    @CacheEvict(value = {"song_detail", "songs_page", "songs_by_album", "songs_by_category", "songs_by_day", "get_songs_artist", "top_streamed_songs", "top_liked_songs"}, allEntries = true)
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public SongResponse updateSong(String id, SongRequest request){
@@ -151,6 +158,11 @@ public class SongService {
             song.setDuration(audioPath.getDuration());
         }
 
+        if (request.getFeaturedArtistIds() != null) {
+            Set<Artist> featuredArtists = new HashSet<>(artistRepository.findAllById(request.getFeaturedArtistIds()));
+            song.setFeaturedArtists(featuredArtists);
+        }
+
         song = songRepository.save(song);
         return songMapper.toSongResponse(song);
     }
@@ -160,13 +172,21 @@ public class SongService {
                 .map(songMapper::toSongResponse);
     }
 
+    @Cacheable(value = "songs_page", key = "#pageable.pageNumber + '-' + #pageable.pageSize")
     public Page<SongResponse> getAllSongs(Pageable pageable){
         return songRepository.findAllActiveSongs(pageable)
                 .map(songMapper::toSongResponse);
     }
 
+    @Cacheable(value = "songs_by_album", key = "#albumId + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<SongResponse> getSongsByAlbum(String albumId, Pageable pageable){
         return songRepository.findByAlbum_Id(albumId, pageable)
+                .map(songMapper::toSongResponse);
+    }
+
+    @Cacheable(value = "songs_by_category", key = "#categoryId + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
+    public Page<SongResponse> getSongsByCategory(String categoryId, Pageable pageable){
+        return songRepository.findByCategory_Id(categoryId, pageable)
                 .map(songMapper::toSongResponse);
     }
 
@@ -176,11 +196,13 @@ public class SongService {
 //                .toList();
 //    }
 
+    @Cacheable(value = "song_detail", key = "#id")
     public SongResponse getSong(String id){
         Song song = songRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.SONG_NOT_FOUND));
         return songMapper.toSongResponse(song);
     }
 
+    @Cacheable(value = "songs_by_day")
     public List<SongResponse> getAllSongsByDay(){
         return songRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))
                 .stream()
@@ -188,6 +210,7 @@ public class SongService {
                 .toList();
     }
 
+    @Cacheable(value = "get_songs_artist")
     public List<SongResponse> getSongByArtist(String artistId){
         List<Song> songs = songRepository.findTopPopularSongsByArtist(artistId);
         return songs.stream()
@@ -195,6 +218,7 @@ public class SongService {
                 .toList();
     }
 
+    @CacheEvict(value = {"song_detail", "songs_page", "songs_by_album", "songs_by_category", "songs_by_day", "get_songs_artist", "top_streamed_songs", "top_liked_songs"}, allEntries = true)
     @PreAuthorize("hasRole('ADMIN')")
     public void softDeleteSong(String id){
         Song song = songRepository.findById(id)
@@ -204,6 +228,7 @@ public class SongService {
         songRepository.save(song);
     }
 
+    @CacheEvict(value = {"song_detail", "songs_page", "songs_by_album", "songs_by_category", "songs_by_day", "get_songs_artist", "top_streamed_songs", "top_liked_songs"}, allEntries = true)
     @PreAuthorize("hasRole('ADMIN')")
     public void restoreSong(String id){
         Song song = songRepository.findById(id)
@@ -214,6 +239,7 @@ public class SongService {
         songRepository.save(song);
     }
 
+    @CacheEvict(value = {"song_detail", "songs_page", "songs_by_album", "songs_by_category", "songs_by_day", "get_songs_artist", "top_streamed_songs", "top_liked_songs"}, allEntries = true)
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public void forceDeleteSong(String id){

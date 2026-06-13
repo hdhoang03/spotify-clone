@@ -1,6 +1,5 @@
 package com.spotify.spotify.repository;
 
-import com.spotify.spotify.entity.Artist;
 import com.spotify.spotify.entity.Notification;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

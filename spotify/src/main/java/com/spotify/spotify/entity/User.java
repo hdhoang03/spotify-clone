@@ -5,6 +5,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -72,4 +73,11 @@ public class User {
 
     @OneToMany(mappedBy = "follower", cascade = CascadeType.REMOVE, orphanRemoval = true)
     Set<UserFollow> followingUsers = new HashSet<>();
+
+    @Column(name = "premium_expiry_date")
+    LocalDateTime premiumExpiryDate;
+
+    @Builder.Default
+    @Column(name = "is_premium")
+    Boolean isPremium = true;
 }

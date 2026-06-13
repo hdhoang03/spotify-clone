@@ -78,7 +78,7 @@ public class AlbumController {
         AlbumResponse response = albumService.getAlbumById(id);
         return ApiResponse.<AlbumResponse>builder()
                 .code(1000)
-                .message("Albums is fetched!")
+                .message("Album is fetched!")
                 .result(response)
                 .build();
     }

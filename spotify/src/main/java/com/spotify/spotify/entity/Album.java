@@ -4,10 +4,12 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 @Entity
 @Getter
@@ -18,6 +20,14 @@ import java.util.Set;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Album {
     @Id
+    /*
+    * Primary Key strategy: UUID v4. Optimized for security;
+    * awareness of index fragmentation exists,
+    * planned to migrate to UUID v7/Snowflake if scaling is required.
+    * */
+//    @UuidGenerator(style = UuidGenerator.Style.TIME)
+//    @Column(columnDefinition = "BINARY(16)")
+//    UUID id;
     @GeneratedValue(strategy = GenerationType.UUID)
     String id;
     String name;

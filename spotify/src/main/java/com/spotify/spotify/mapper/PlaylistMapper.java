@@ -6,7 +6,6 @@ import com.spotify.spotify.dto.response.PlaylistResponse;
 import com.spotify.spotify.dto.response.UserSummaryResponse;
 import com.spotify.spotify.entity.Playlist;
 import com.spotify.spotify.entity.User;
-import jdk.jfr.Name;
 import org.mapstruct.*;
 
 @Mapper(componentModel = "spring",

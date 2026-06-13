@@ -79,7 +79,17 @@ public class CategoryController {
                                                          @RequestParam(defaultValue = "10") int size,
                                                          @RequestParam(defaultValue = "false") boolean isDeleted
     ){
-        Page<CategoryResponse> responses = categoryService.searchCategories(keyword, isDeleted, PageRequest.of(page - 1, size));
+        Page<CategoryResponse> responses;
+        if (keyword == null || keyword.trim().isEmpty() && !isDeleted) {
+            responses = categoryService.getAllCategories(PageRequest.of(page - 1, size));
+            return ApiResponse.<Page<CategoryResponse>>builder()
+                    .code(1000)
+                    .message("All categories fetched from cache!")
+                    .result(responses)
+                    .build();
+        }
+
+        responses = categoryService.searchCategories(keyword, isDeleted, PageRequest.of(page - 1, size));
         return ApiResponse.<Page<CategoryResponse>>builder()
                 .code(1000)
                 .message("Categories search result!")

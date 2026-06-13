@@ -56,9 +56,9 @@ public class AuthenticationService {
     RoleRepository roleRepository;
     ObjectMapper objectMapper;
     KafkaProducerService kafkaProducerService;
-//    PlaylistService playlistService;
     OutboundIdentityClient outboundIdentityClient;
     OutboundUserClient outboundUserClient;
+    CaptchaService captchaService;
 
     @NonFinal
     @Value("${jwt.signerKey}")
@@ -135,6 +135,9 @@ public class AuthenticationService {
     }
 
     public void register(UserCreationRequest request){
+        if (!captchaService.verifyCaptcha(request.getCaptchaToken())){
+            throw new AppException(ErrorCode.INVALID_CAPTCHA);
+        }
         if (userRepository.existsByUsername(request.getUsername())){
             throw new AppException(ErrorCode.USER_ALREADY_EXIST);
         }
@@ -325,11 +328,17 @@ public class AuthenticationService {
     }
 
     public AuthenticationResponse authenticationResponse(AuthenticationRequest request){
+        if (!captchaService.verifyCaptcha(request.getCaptchaToken())){
+            throw new AppException(ErrorCode.INVALID_CAPTCHA);
+        }
+
         var user = userRepository.findByUsername(request.getUsername()).
                 orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
+
         if(!user.getEnabled()){
             throw new AppException(ErrorCode.ACCOUNT_DISABLED);
         }
+
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
         boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getPassword()); //So sánh password
 

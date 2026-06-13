@@ -30,8 +30,8 @@ import java.util.List;
 public class SecurityConfig {
     @Autowired
     private CustomJwtDecoder customJwtDecoder;
-    @Autowired
-    private UserRepository userRepository;
+//    @Autowired
+//    private UserRepository userRepository;
 
     private final String[] PUBLIC_ENDPOINTS = {"/user/**", "/user",
             "/auth/token", "/auth/introspect", "/auth/logout", "/auth/refresh", "/auth/register", "/auth/verify", "/auth/forgot-password", "/auth/reset-password",
@@ -45,6 +45,8 @@ public class SecurityConfig {
             "/api/test-kafka",
             "/stream/**",
             "/auth/outbound/authentication",
+            "/lyrics/{songId}/get",
+            "/api/payment/webhook"
     };
 
     @Bean

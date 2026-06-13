@@ -71,6 +71,17 @@ public class SongController {
                 .build();
     }
 
+    @GetMapping("/{categoryId}/category")
+    ApiResponse<Page<SongResponse>> getSongsByCategory(@PathVariable String categoryId,
+                                                       @RequestParam(defaultValue = "1") int page,
+                                                       @RequestParam(defaultValue = "10") int size){
+        return ApiResponse.<Page<SongResponse>>builder()
+                .code(1000)
+                .message("All songs by category are fetched!")
+                .result(songService.getSongsByCategory(categoryId, PageRequest.of(page - 1, size)))
+                .build();
+    }
+
     @GetMapping("/album/{albumId}")
     ApiResponse<Page<SongResponse>> getSongsByAlbum(@PathVariable String albumId,
                                                     @RequestParam(defaultValue = "1") int page,

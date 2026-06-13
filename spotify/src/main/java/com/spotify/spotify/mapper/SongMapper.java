@@ -1,6 +1,7 @@
 package com.spotify.spotify.mapper;
 
 import com.spotify.spotify.dto.request.SongRequest;
+import com.spotify.spotify.dto.response.FeaturedArtistInfo;
 import com.spotify.spotify.dto.response.SearchSongResponse;
 import com.spotify.spotify.dto.response.SongResponse;
 import com.spotify.spotify.entity.Album;
@@ -8,6 +9,11 @@ import com.spotify.spotify.entity.Artist;
 import com.spotify.spotify.entity.Category;
 import com.spotify.spotify.entity.Song;
 import org.mapstruct.*;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 
@@ -30,6 +36,8 @@ public interface SongMapper {
     @Mapping(source = "album", target = "albumId", qualifiedByName = "mapAlbumId")
     @Mapping(source = "category", target = "category", qualifiedByName = "mapCategoryName")
     @Mapping(source = "artist", target = "artist", qualifiedByName = "mapArtistName")
+//    @Mapping(source = "artist.avatarUrl", target = "artistAvatar") //0607 gra
+//    @Mapping(source = "featuredArtists", target = "featuredArtists", qualifiedByName = "mapArtistInfo") //06067 gra
     @Mapping(source = "category.id", target = "categoryId")
     @Mapping(source = "artist.id", target = "artistId")
     SongResponse toSongResponse(Song song);
@@ -37,6 +45,7 @@ public interface SongMapper {
     @Named("toSongSearchResponse")
     @Mapping(source = "artist.name", target = "artistName")
     @Mapping(source = "artist.id", target = "artistId")
+    @Mapping(source = "featuredArtists", target = "featuredArtists", qualifiedByName = "mapArtistInfo") //0607 gra
     SearchSongResponse toSongSearchResponse(Song song);
 
     @Mapping(target = "uploadedBy", ignore = true)
@@ -52,15 +61,6 @@ public interface SongMapper {
     default String map(Artist artist){
         return artist != null ? artist.getName() : null;
     }
-
-    //Sử dụng hàm này thay vì tự sinh code để kiểm tra null, ví dụ bài hát 0 thuộc album nào sẽ không bị lỗi 500
-    //Hàm này nguy hiểm
-//    default Artist map(String artistName){
-//        if (artistName == null) return null;
-//        Artist artist = new Artist();
-//        artist.setName(artistName);
-//        return artist;
-//    }
 
     @Named("mapAlbumName")
     default String mapAlbumName(Album album){
@@ -92,5 +92,17 @@ public interface SongMapper {
         Category category = new Category();
         category.setName(categoryName);
         return category;
+    }
+
+    @Named("mapArtistInfo")
+    default List<FeaturedArtistInfo> mapArtistInfo(Set<Artist> artists) {
+        if (artists == null) return Collections.emptyList();
+        return artists.stream().map(a ->
+                FeaturedArtistInfo.builder()
+                        .id(a.getId())
+                        .name(a.getName())
+                        .avatarUrl(a.getAvatarUrl())
+                        .build()
+        ).collect(Collectors.toList());
     }
 }

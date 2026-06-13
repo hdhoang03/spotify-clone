@@ -34,15 +34,15 @@ public class ArtistController {
                 .build();
     }
 
-//    @GetMapping("/all")
-//    ApiResponse<Page<ArtistResponse>> getAllArtists(@RequestParam(defaultValue = "1") int page,
-//                                                    @RequestParam(defaultValue = "10") int size){
-//        return ApiResponse.<Page<ArtistResponse>>builder()
-//                .code(1000)
-//                .message("All artists are fetched!")
-//                .result(artistService.getAllArtists(PageRequest.of(page - 1, size, Sort.by("name").ascending())))
-//                .build();
-//    }
+    @GetMapping("/all")
+    ApiResponse<Page<ArtistResponse>> getAllArtists(@RequestParam(defaultValue = "1") int page,
+                                                    @RequestParam(defaultValue = "10") int size){
+        return ApiResponse.<Page<ArtistResponse>>builder()
+                .code(1000)
+                .message("All artists are fetched!")
+                .result(artistService.getAllArtists(PageRequest.of(page - 1, size, Sort.by("name").ascending())))
+                .build();
+    }
 
     @GetMapping("/albums/{artistId}")//Do sai tên biến @PathVariable là albumId
     ApiResponse<List<AlbumResponse>> getAlbumsByArtist(@PathVariable String artistId){

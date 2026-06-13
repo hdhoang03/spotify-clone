@@ -23,20 +23,23 @@ public class Song {
     @GeneratedValue(strategy = GenerationType.UUID)
     String id;
     String title;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "artist_id")
     Artist artist;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "album_id")
     @JsonBackReference
     Album album;
+
     String coverUrl;
     String audioUrl;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "uploaded_by")
     User uploadedBy;
-//    @ManyToMany(mappedBy = "songs") //một bài hát thuộc nhiều thể loại
-//    Set<Category> categories = new HashSet<>();
+
     @JsonBackReference
     @ManyToOne//Một bài hát thuộc một thể loại
     @JoinColumn(name = "category_id")
@@ -85,7 +88,6 @@ public class Song {
         joinColumns = @JoinColumn(name = "song_id"),
         inverseJoinColumns = @JoinColumn(name = "artist_id")
     )
-    @Builder.Default
     Set<Artist> featuredArtists = new HashSet<>();
 
     //Để remove song hoạt động

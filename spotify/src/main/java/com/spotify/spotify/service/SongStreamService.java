@@ -18,15 +18,14 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -193,6 +192,7 @@ public class SongStreamService {
         return songStreamRepository.getStreamStats(songId, startDateTime, endDateTime);
     }
 
+    @Cacheable(value = "top_streamed_songs")
     public List<TopStreamResponse> getTopStreamSongs(){ //Top bài hát nghe nhiều
         return songStreamRepository.findTopStreamSongs();
     }

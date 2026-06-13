@@ -41,6 +41,7 @@ public interface SongStreamRepository extends JpaRepository<SongStream, String> 
             SELECT new com.spotify.spotify.dto.response.TopStreamResponse(
                 s.song.title,
                 s.song.id,
+                s.song.artist.id,
                 s.song.artist.name,
                 s.song.coverUrl,
                 s.song.audioUrl,
@@ -49,7 +50,7 @@ public interface SongStreamRepository extends JpaRepository<SongStream, String> 
             )
             FROM SongStream s
             WHERE s.validStream = true
-            GROUP BY s.song.id, s.song.title, s.song.artist.name, s.song.coverUrl, s.song.audioUrl, s.song.duration
+            GROUP BY s.song.id, s.song.title, song.artist.id, s.song.artist.name, s.song.coverUrl, s.song.audioUrl, s.song.duration
             ORDER BY COUNT(s) DESC
             LIMIT 10
     """)
@@ -87,7 +88,7 @@ public interface SongStreamRepository extends JpaRepository<SongStream, String> 
 
     @Query("""
         SELECT new com.spotify.spotify.dto.response.TopLikeSongResponse(
-            s.song.title, s.song.id, s.song.artist.name, s.song.coverUrl, s.song.audioUrl, COUNT(s), s.song.duration
+            s.song.title, s.song.id, s.song.artist.id, s.song.artist.name, s.song.coverUrl, s.song.audioUrl, COUNT(s), s.song.duration
         )
         FROM SongStream s
         WHERE s.user.id = :userId
@@ -95,7 +96,7 @@ public interface SongStreamRepository extends JpaRepository<SongStream, String> 
             AND MONTH(s.createdAt) = :month
             AND YEAR(s.createdAt) = :year
             AND s.song.deleted = false
-        GROUP BY s.song.id, s.song.title, s.song.artist.name, s.song.coverUrl, s.song.audioUrl, s.song.duration
+        GROUP BY s.song.id, s.song.title, s.song.artist.id, s.song.artist.name, s.song.coverUrl, s.song.audioUrl, s.song.duration
         ORDER BY COUNT(s) DESC
         LIMIT 10
     """)

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface ArtistFollowRepository extends JpaRepository<ArtistFollow, String> {
@@ -32,4 +33,7 @@ public interface ArtistFollowRepository extends JpaRepository<ArtistFollow, Stri
             WHERE f.artist.id = :artistId 
             """)
     List<String> findFollowerUsernamesByArtistId(@Param("artistId") String artistId);
+
+    @Query("SELECT af.artist.id FROM ArtistFollow af WHERE af.user.id = :userId AND af.artist.id IN :artistIds")
+    Set<String> findFollowedArtistIds(@Param("userId") String userId, @Param("artistIds") List<String> artistIds);
 }

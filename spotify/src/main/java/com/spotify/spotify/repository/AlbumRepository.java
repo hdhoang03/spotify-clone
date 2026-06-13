@@ -34,7 +34,8 @@ public interface AlbumRepository extends JpaRepository<Album, String> {
                                                    Pageable pageable);
 
     boolean existsByNameAndArtists_Id(String name, String artistId);
-    List<Album> findByArtists_Id(String artistId);
+//    List<Album> findByArtists_Id(String artistId);
+    List<Album> findByArtists_IdAndDeletedFalse(String artistId);
     @Query("""
             SELECT DISTINCT al FROM Album al
             LEFT JOIN al.artists ar
@@ -46,4 +47,5 @@ public interface AlbumRepository extends JpaRepository<Album, String> {
             )
     """)
     List<Album> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
 }

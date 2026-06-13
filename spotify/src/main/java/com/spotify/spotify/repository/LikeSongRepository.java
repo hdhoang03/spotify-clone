@@ -30,10 +30,10 @@ public interface LikeSongRepository extends JpaRepository<LikeSong, String> {
 
     @Query("""
             SELECT new com.spotify.spotify.dto.response.TopLikeSongResponse(
-                l.song.title, l.song.id, l.song.artist.name, l.song.coverUrl, l.song.audioUrl, COUNT(l), l.song.duration
+                l.song.title, l.song.id, l.song.artist.id, l.song.artist.name, l.song.coverUrl, l.song.audioUrl, COUNT(l), l.song.duration
             )
             FROM LikeSong l
-            GROUP BY l.song.title, l.song.id, l.song.artist.name, l.song.coverUrl, l.song.duration, l.song.audioUrl
+            GROUP BY l.song.title, l.song.id, l.song.artist.id, l.song.artist.name, l.song.coverUrl, l.song.duration, l.song.audioUrl
             ORDER BY COUNT(l) DESC
             """)
     Page<TopLikeSongResponse> findTopLikedSongs(Pageable pageable);

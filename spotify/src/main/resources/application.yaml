@@ -35,6 +35,17 @@ spring:
           timeout: 5000
           writetimeout: 5000
 
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
   kafka:
     bootstrap-servers: localhost:9092
     consumer:
@@ -51,8 +62,17 @@ cloudinary:
   api-key: ${KEY_CLOUD}
   api-secret: ${SECRET_CLOUD}
 
+payos:
+  client-id: ${PAYOS_CLIENT_ID}
+  api-key: ${PAYOS_API_KEY}
+  checksum-key: ${PAYOS_CHECKSUM_KEY}
+
 outbound:
   identity:
     client-id: ${GOOGLE_OAUTH_CLIENT_ID}
     client-secret: ${GOOGLE_OAUTH_CLIENT_SECRET}
     redirect-uri: "http://localhost:5173/oauth2/callback"
+
+google:
+  recaptcha:
+    secret: ${RECAPTCHA_SECRET_KEY}

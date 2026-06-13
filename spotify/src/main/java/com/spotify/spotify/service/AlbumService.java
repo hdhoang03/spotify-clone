@@ -19,6 +19,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -50,6 +52,13 @@ public class AlbumService {
 
     private static final String UPLOAD_DIR = "uploads/albums/";
 
+    /*
+    * Mẹo nhỏ: allEntries = true cho nhanh và an toàn ở quy mô nhỏ.
+    * Khi hệ thống lớn lên, bạn có thể truyền cụ thể key = "#albumId" để xóa đúng album bị sửa
+    * giúp tối ưu RAM hơn
+    * */
+
+    @CacheEvict(value = {"albums_page", "album_detail", "albums_by_artist"}, allEntries = true)
     @PreAuthorize("hasRole('ADMIN')")
     public AlbumResponse createAlbum(AlbumRequest request){
         if(albumRepository.existsByNameAndArtists_Id(request.getName(), request.getArtistId())){
@@ -68,6 +77,7 @@ public class AlbumService {
         return albumMapper.toAlbumResponse(album);
     }
 
+    @CacheEvict(value = {"albums_page", "album_detail", "albums_by_artist"}, allEntries = true)
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public void addSongsToAlbum(String albumId, List<String> songIds){
@@ -103,6 +113,7 @@ public class AlbumService {
         songRepository.saveAll(songs);
     }
 
+    @CacheEvict(value = {"albums_page", "album_detail", "albums_by_artist"}, allEntries = true)
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public void removeSongFromAlbum(String albumId, String songId){
@@ -120,6 +131,7 @@ public class AlbumService {
         songRepository.save(song);
     }
 
+    @Cacheable(value = "songs_by_album", key = "#albumId + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<SongResponse> getAllSongsFromAlbum(String albumId, Pageable pageable){
         if(!albumRepository.existsById(albumId)){
             throw new AppException(ErrorCode.ALBUM_NOT_FOUND);
@@ -129,31 +141,63 @@ public class AlbumService {
                 .map(songMapper::toSongResponse);
     }
 
+    @Cacheable(value = "albums_by_artist", key = "#artistId")
     public List<AlbumResponse> getAlbumsByArtist(String artistId){
-        Artist artist = artistRepository.findById(artistId)
-                .orElseThrow(() -> new AppException(ErrorCode.ARTIST_NOT_FOUND));
+        if (!artistRepository.existsById(artistId)){
+            throw new AppException(ErrorCode.ARTIST_NOT_FOUND);
+        }
 
-        List<Album> albums = albumRepository.findByArtists_Id(artistId);
-
-        if(albums.isEmpty()) return Collections.emptyList();
+        List<Album> albums = albumRepository.findByArtists_IdAndDeletedFalse(artistId);
 
         return albums.stream()
                 .map(albumMapper::toAlbumResponse)
                 .collect(Collectors.toList());
     }
 
+    @Cacheable(value = "albums_page", key = "#pageable.pageNumber + '_' + #pageable.pageSize")
     @Transactional(readOnly = true)
     public Page<AlbumResponse> getAllAlbum(Pageable pageable){
-        return albumRepository.findAll(pageable)
-                .map(albumMapper::toAlbumSummary);//chỉ lấy album không lấy các bài hát đi kèm
+//        return albumRepository.findAll(pageable)
+//                .map(albumMapper::toAlbumSummary);//chỉ lấy album không lấy các bài hát đi kèm
+        Page<AlbumRepository.AlbumWithSongCount> projections = albumRepository.searchAlbumsWithCount(null, false, pageable);
+        return projections.map(projection -> {
+            Album album = projection.getAlbum();
+            AlbumResponse response = albumMapper.toAlbumResponse(album);
+
+            response.setSongCount(projection.getSongCount() != null ? projection.getSongCount().intValue() : 0);
+            if (album.getArtists() != null && !album.getArtists().isEmpty()) {
+                String names = album.getArtists().stream()
+                        .map(Artist::getName)
+                        .collect(Collectors.joining(", "));
+                response.setArtistName(names);
+            }
+            return response;
+        });
     }
 
+    @Cacheable(value = "album_detail", key = "#id")
     public AlbumResponse getAlbumById(String id){
+//        Album album = albumRepository.findById(id)
+//                .orElseThrow(() -> new AppException(ErrorCode.ALBUM_NOT_FOUND));
+//        return albumMapper.toAlbumResponse(album);
         Album album = albumRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ALBUM_NOT_FOUND));
-        return albumMapper.toAlbumResponse(album);
+
+        AlbumResponse response = albumMapper.toAlbumResponse(album);
+
+        if (album.getArtists() != null && !album.getArtists().isEmpty()) {
+            String names = album.getArtists().stream()
+                    .map(Artist::getName)
+                    .collect(Collectors.joining(", "));
+            response.setArtistName(names);
+        }
+
+        long songCount = songRepository.countByAlbum_IdAndDeletedFalse(id);
+        response.setSongCount((int) songCount);
+        return response;
     }
 
+    @CacheEvict(value = {"albums_page", "album_detail", "albums_by_artist"}, allEntries = true)
     @PreAuthorize("hasRole('ADMIN')")
     public AlbumResponse updateAlbum(String id, AlbumRequest request){
         Album album = albumRepository.findById(id)
@@ -175,6 +219,7 @@ public class AlbumService {
         return albumMapper.toAlbumResponse(album);
     }
 
+    @CacheEvict(value = {"albums_page", "album_detail", "albums_by_artist"}, allEntries = true)
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public void deleteAlbum(String id){

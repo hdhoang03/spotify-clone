@@ -101,10 +101,11 @@ public class UserController {
     ApiResponse<Page<ArtistResponse>> getMyFollowedArtists(@RequestParam(defaultValue = "1") int page,
                                                            @RequestParam(defaultValue = "10") int size
     ){
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
         return ApiResponse.<Page<ArtistResponse>>builder()
                 .code(1000)
                 .message("My favorite artists")
-                .result(artistFollowService.getMyFollowedArtists(PageRequest.of(page -1, size)))
+                .result(artistFollowService.getMyFollowedArtists(username, PageRequest.of(page -1, size)))
                 .build();
     }
 
@@ -187,6 +188,18 @@ public class UserController {
                 .result(userService.getBlockedUser(PageRequest.of(page - 1, size)))
                 .build();
     }
+
+    @GetMapping("/my-premium")
+    ApiResponse<Boolean> checkMyPremium(){
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        boolean isPremium = userService.checkPremiumByUsername(username);
+        return ApiResponse.<Boolean>builder()
+                .code(1000)
+                .message("Check premium successfully.")
+                .result(isPremium)
+                .build();
+    }
+
 
     @PostMapping("/{userId}/block")
     ApiResponse<Boolean> toggleBlockUser(@PathVariable String userId){

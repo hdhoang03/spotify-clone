@@ -14,4 +14,6 @@ public interface UserFollowRepository extends JpaRepository<UserFollow, String> 
     boolean existsByFollower_IdAndFollowing_Id(String followerId, String followingId);
     Page<UserFollow> findByFollower_Id(String followerId, Pageable pageable);
     Page<UserFollow> findByFollowing_Id(String followerId, Pageable pageable);
+    long countByFollowing_Id(String followingId);
+    long countByFollower_Id(String followerId);
 }

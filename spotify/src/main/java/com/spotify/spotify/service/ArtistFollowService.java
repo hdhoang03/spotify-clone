@@ -14,6 +14,8 @@ import com.spotify.spotify.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -33,6 +35,7 @@ public class ArtistFollowService {
     UserRepository userRepository;
     ArtistMapper artistMapper;
 
+    @CacheEvict(value = "my_followed_artists", allEntries = true)
     @Transactional //phải có để Modifying chạy
     public boolean toggleFollow(String artistId){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -64,8 +67,9 @@ public class ArtistFollowService {
         }
     }
 
-    public Page<ArtistResponse> getMyFollowedArtists(Pageable pageable){
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+    @Cacheable(value = "my_followed_artists", key = "#username + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
+    public Page<ArtistResponse> getMyFollowedArtists(String username, Pageable pageable){
+//        String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 

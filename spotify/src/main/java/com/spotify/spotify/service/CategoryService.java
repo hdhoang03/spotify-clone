@@ -19,6 +19,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -36,12 +38,16 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+
+//Nhược điểm: Dữ liệu lưu sẽ là chuỗi nhị phân khó đọc bằng mắt khi dùng redis-cli.
 public class CategoryService {
     Cloudinary cloudinary;
     SongRepository songRepository;
     CategoryRepository categoryRepository;
     CategoryMapper categoryMapper;
 
+    //xóa sạch toàn bộ cache của Category mỗi khi có thay đổi (dùng allEntries = true).
+    @CacheEvict(value = {"categories_page", "category_detail", "categories_by_type"}, allEntries = true)
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public CategoryResponse createCategory(CategoryRequest request){
@@ -59,6 +65,7 @@ public class CategoryService {
         return categoryMapper.toCategoryResponse(category);
     }
 
+    @CacheEvict(value = {"categories_page", "category_detail", "categories_by_type"}, allEntries = true)
     @PreAuthorize("hasRole('ADMIN')")
     @Transactional //Rollback khi gặp lỗi
     public CategoryResponse addSongToCategory(String categoryId, List<String> songIds){
@@ -76,6 +83,7 @@ public class CategoryService {
         return categoryMapper.toCategoryResponse(category);
     }
 
+    @CacheEvict(value = {"categories_page", "category_detail", "categories_by_type"}, allEntries = true)
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public void removeSongFromCategory(String categoryId, String songId){
@@ -93,20 +101,21 @@ public class CategoryService {
         songRepository.save(song);
     }
 
-        public Page<CategoryResponse> getAllCategories(Pageable pageable){
-//            return categoryRepository.findAllByDeletedFalse(pageable)
-//                    .map(categoryMapper::toCategoryResponse);
-            Page<CategoryWithSongCount> projections = categoryRepository.findAllWithSongCountByDeletedFalse(pageable);
+    @Cacheable(value = "categories_page", key = "#pageable.pageNumber + '_' + #pageable.pageSize")
+    public Page<CategoryResponse> getAllCategories(Pageable pageable){
+        Page<CategoryWithSongCount> projections = categoryRepository.findAllWithSongCountByDeletedFalse(pageable);
 
-            return projections.map(categoryMapper::toCategoryResponseFromProjection);
-        }
+        return projections.map(categoryMapper::toCategoryResponseFromProjection);
+    }
 
+    @Cacheable(value = "category_detail", key = "#id")
     public CategoryResponse getCategoryById(String id){
         Category category = categoryRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
         return categoryMapper.toCategoryResponse(category);
     }
 
+    @CacheEvict(value = {"categories_page", "category_detail", "categories_by_type"}, allEntries = true)
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public CategoryResponse updateCategory(String id, CategoryUpdateRequest request){
@@ -131,6 +140,7 @@ public class CategoryService {
         return categoryMapper.toCategoryResponse(category);
     }
 
+    @CacheEvict(value = {"categories_page", "category_detail", "categories_by_type"}, allEntries = true)
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public void deleteCategory(String id){
@@ -155,6 +165,7 @@ public class CategoryService {
         categoryRepository.save(category);
     }
 
+    @CacheEvict(value = {"categories_page", "category_detail", "categories_by_type"}, allEntries = true)
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public void restoreCategory(String id){
@@ -170,6 +181,7 @@ public class CategoryService {
         return projections.map(categoryMapper::toCategoryResponseFromProjection);
     }
 
+    @Cacheable(value = "categories_by_type", key = "#type.name()")
     public List<CategoryResponse> getCategoriesByType(CategoryType type){
         return categoryRepository.findByTypeAndDeletedFalseOrderByDisplayOrderAsc(type)
                 .stream()
@@ -177,6 +189,7 @@ public class CategoryService {
                 .collect(Collectors.toList());
     }
 
+    @CacheEvict(value = {"categories_page", "category_detail", "categories_by_type"}, allEntries = true)
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public CategoryResponse updateDisplayOrder(String id, Integer newOrder){

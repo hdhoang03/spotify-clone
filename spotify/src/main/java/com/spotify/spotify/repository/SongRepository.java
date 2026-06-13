@@ -33,9 +33,10 @@ public interface SongRepository extends JpaRepository<Song, String>, JpaSpecific
 
 //    @Query("""
 //        SELECT DISTINCT s FROM Song s
-//        LEFT JOIN s.featureArtists fa
+//        LEFT JOIN s.featuredArtists fa
 //        WHERE s.deleted = false
 //        AND (s.artist.id = :artistId OR fa.id = :artistId)
+//        ORDER BY s.streamCount DESC
 //    """)
 //    List<Song> findSongsByArtistOrFeatured(@Param("artistId") String artistId);
 
@@ -43,6 +44,8 @@ public interface SongRepository extends JpaRepository<Song, String>, JpaSpecific
     Page<Song> searchActiveSongByTitle(String keyword, Pageable pageable);
 
     Page<Song> findByAlbum_Id(String albumId, Pageable pageable);
+
+    Page<Song> findByCategory_Id(String categoryId, Pageable pageable);
 
     @Query("SELECT s FROM Song s WHERE s.deleted = false AND s.artist.deleted = false")
     Page<Song> findAllActiveSongs(Pageable pageable);
@@ -52,6 +55,7 @@ public interface SongRepository extends JpaRepository<Song, String>, JpaSpecific
             LEFT JOIN FETCH s.album
             LEFT JOIN FETCH s.artist a
             LEFT JOIN FETCH s.category
+            LEFT JOIN FETCH s.featuredArtists
             WHERE s.deleted = false
             AND (LOWER(s.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
                 OR
@@ -89,9 +93,12 @@ public interface SongRepository extends JpaRepository<Song, String>, JpaSpecific
     List<GenreStatResponse> countSongsByCategory();
 
     @Query("""
-        SELECT s FROM Song s
-        WHERE s.artist.id = :artistId AND s.deleted = false
+        SELECT DISTINCT s FROM Song s
+        LEFT JOIN s.featuredArtists fa
+        WHERE (s.artist.id = :artistId OR fa.id = :artistId) AND s.deleted = false
         ORDER BY s.streamCount DESC
     """)
     List<Song> findTopPopularSongsByArtist(@Param("artistId") String artistId);
+
+    long countByAlbum_IdAndDeletedFalse(String albumId);
 }

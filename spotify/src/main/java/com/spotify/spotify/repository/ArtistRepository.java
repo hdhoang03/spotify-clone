@@ -42,6 +42,8 @@ public interface ArtistRepository extends JpaRepository<Artist, String> {
     Page<Artist> findAllByDeleted(boolean deleted, Pageable pageable); //nghệ sĩ chưa xóa
     boolean existsByNameIgnoreCase(String name);
     Page<Artist> findByNameContainingIgnoreCaseAndDeleted(String keyword, boolean deleted, Pageable pageable);
+    @Query("SELECT COUNT(s) FROM Song s WHERE s.artist.id = :artistId AND s.deleted = false")
+    long countSongsByArtistId(@Param("artistId") String artistId);
 
     //COALESCE(a.followerCount, 0) giúp tránh lỗi nếu ban đầu count đang bị NULL
     @Modifying
