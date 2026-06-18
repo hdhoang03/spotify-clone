@@ -4,6 +4,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.io.Serializable;
+import java.util.List;
 
 @Getter
 @Setter
@@ -18,6 +19,6 @@ public class TopLikeSongResponse implements Serializable {
     String artistName;
     String coverUrl;
     String audioUrl;
-    Long streamCount;
+    Long likeCount;
     Double duration;
 }

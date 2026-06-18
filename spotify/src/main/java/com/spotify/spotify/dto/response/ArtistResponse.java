@@ -6,6 +6,7 @@ import lombok.experimental.FieldDefaults;
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @FieldDefaults(level = AccessLevel.PRIVATE)
@@ -21,4 +22,5 @@ public class ArtistResponse implements Serializable {
     Integer followerCount;
     Integer songCount;
     String country;
+    Map<String, String> socialAccounts;
 }

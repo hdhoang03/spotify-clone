@@ -38,7 +38,14 @@ public class AuthenticationController {
                 .build();
     }
 
-    //thêm resend otp
+    @PostMapping("/resend-otp")
+    ApiResponse<Void> resendOtp(@RequestBody ResendOtpRequest request){
+        authenticationService.resendOTP(request.email());
+        return ApiResponse.<Void>builder()
+                .code(1000)
+                .message("OTP has been sent to your email")
+                .build();
+    }
 
     @PostMapping("/verify")
     ApiResponse<AuthenticationResponse> verify(@RequestBody VerifyOtpRequest request){

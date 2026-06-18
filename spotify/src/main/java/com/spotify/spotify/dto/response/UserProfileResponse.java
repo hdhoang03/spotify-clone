@@ -23,4 +23,6 @@ public class UserProfileResponse implements Serializable {
     Long followingArtistCount;
     Boolean isFollowedByMe;
     boolean isPublicProfile;
+    Boolean isPremium;
+    String language;
 }

@@ -6,10 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spotify.spotify.constaint.NotificationTargetType;
 import com.spotify.spotify.constaint.PredefinedRole;
 import com.spotify.spotify.dto.event.SseNotificationEvent;
-import com.spotify.spotify.dto.request.SupportRequest;
-import com.spotify.spotify.dto.request.UserCreationRequest;
-import com.spotify.spotify.dto.request.UserProfileUpdateRequest;
-import com.spotify.spotify.dto.request.UserUpdateRequest;
+import com.spotify.spotify.dto.request.*;
 import com.spotify.spotify.dto.response.*;
 import com.spotify.spotify.entity.Role;
 import com.spotify.spotify.entity.User;
@@ -506,6 +503,17 @@ public class UserService {
                         .username(follow.getFollowing().getUsername())
                         .avatarUrl(follow.getFollowing().getAvatarUrl())
                         .build());
+    }
+
+    @Transactional
+    @CacheEvict(value = "user_profile",  allEntries = true)
+    public void updatePreferredLanguage(LanguageUpdateRequest request){
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        user.setPreferredLanguage(request.getLanguage());
+        userRepository.save(user);
     }
 
     public void sendSupportEmail(SupportRequest request){

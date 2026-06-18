@@ -24,4 +24,5 @@ public class UserResponse implements Serializable {
     Boolean enabled;
     Set<RoleResponse> roles;
     boolean isPublicProfile;
+    String preferredLanguage;
 }

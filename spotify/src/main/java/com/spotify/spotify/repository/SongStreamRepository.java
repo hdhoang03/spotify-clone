@@ -50,7 +50,8 @@ public interface SongStreamRepository extends JpaRepository<SongStream, String> 
             )
             FROM SongStream s
             WHERE s.validStream = true
-            GROUP BY s.song.id, s.song.title, song.artist.id, s.song.artist.name, s.song.coverUrl, s.song.audioUrl, s.song.duration
+            GROUP BY s.song.id, s.song.title, song.artist.id, s.song.artist.name,
+                s.song.coverUrl, s.song.audioUrl, s.song.duration
             ORDER BY COUNT(s) DESC
             LIMIT 10
     """)

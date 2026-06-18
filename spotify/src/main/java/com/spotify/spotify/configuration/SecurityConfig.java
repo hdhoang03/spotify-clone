@@ -34,7 +34,7 @@ public class SecurityConfig {
 //    private UserRepository userRepository;
 
     private final String[] PUBLIC_ENDPOINTS = {"/user/**", "/user",
-            "/auth/token", "/auth/introspect", "/auth/logout", "/auth/refresh", "/auth/register", "/auth/verify", "/auth/forgot-password", "/auth/reset-password",
+            "/auth/token", "/auth/introspect", "/auth/logout", "/auth/refresh", "/auth/register", "/auth/verify", "/auth/forgot-password", "/auth/reset-password", "/auth/resend-otp",
             "/categories","/categories/**", "/categories/search",
             "/albums", "/albums/**", "/albums/all",
             "/artist", "/artist/**",

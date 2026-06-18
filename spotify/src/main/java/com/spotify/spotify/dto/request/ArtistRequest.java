@@ -5,6 +5,7 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.util.Map;
 
 @Data
 @AllArgsConstructor
@@ -17,4 +18,5 @@ public class ArtistRequest {
     MultipartFile avatarUrl;
     String country;
     LocalDate debutDate;
+    Map<String, String> socialAccounts;
 }

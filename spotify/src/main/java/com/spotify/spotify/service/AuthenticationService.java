@@ -13,7 +13,6 @@ import com.spotify.spotify.dto.request.*;
 import com.spotify.spotify.dto.response.AuthenticationResponse;
 import com.spotify.spotify.dto.response.IntrospectResponse;
 import com.spotify.spotify.entity.InvalidatedToken;
-import com.spotify.spotify.entity.Role;
 import com.spotify.spotify.entity.User;
 import com.spotify.spotify.exception.AppException;
 import com.spotify.spotify.exception.ErrorCode;
@@ -24,8 +23,11 @@ import com.spotify.spotify.repository.RoleRepository;
 import com.spotify.spotify.repository.UserRepository;
 import com.spotify.spotify.repository.httpclient.OutboundIdentityClient;
 import com.spotify.spotify.repository.httpclient.OutboundUserClient;
+import jakarta.annotation.PostConstruct;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+//import org.redisson.api.RBloomFilter;
+//import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Value;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
@@ -59,6 +61,12 @@ public class AuthenticationService {
     OutboundIdentityClient outboundIdentityClient;
     OutboundUserClient outboundUserClient;
     CaptchaService captchaService;
+//    RedissonClient redissonClient;
+//
+//    @NonFinal
+//    RBloomFilter<String> usernameBloomFilter;
+//    @NonFinal
+//    RBloomFilter<String> emailBloomFilter;
 
     @NonFinal
     @Value("${jwt.signerKey}")
@@ -86,6 +94,15 @@ public class AuthenticationService {
 
     @NonFinal
     protected final String GRANT_TYPE = "authorization_code";
+
+//    @PostConstruct
+//    public void initBloomFilter() {
+//        usernameBloomFilter = redissonClient.getBloomFilter("bloom:usernames");
+//        usernameBloomFilter.tryInit(1000000L, 0.01); //Tỉ lệ sai số 1% với 1 triệu người đăng ký
+//
+//        emailBloomFilter = redissonClient.getBloomFilter("bloom:emails");
+//        emailBloomFilter.tryInit(1000000L, 0.01);
+//    }
 
     public AuthenticationResponse outboundAuthenticate(String code){
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
@@ -120,9 +137,8 @@ public class AuthenticationService {
                 }
 
                     User savedUser = userRepository.save(newUser);
-
-//                    playlistService.createDefaultPlaylist(savedUser);
-
+//                    usernameBloomFilter.add(savedUser.getUsername());
+//                    emailBloomFilter.add(savedUser.getEmail());
                     return savedUser;
                 });
 
@@ -134,13 +150,51 @@ public class AuthenticationService {
                 .build();
     }
 
+    public void resendOTP(String email){
+        String redisKey = "REG_OTP:" + email;
+        Map<String,Object> data = (Map<String, Object>) redisTemplate.opsForValue().get(redisKey);
+        if (data == null){
+           throw new AppException(ErrorCode.OTP_EXPIRED);
+        }
+
+        String newOtp = String.valueOf(new Random().nextInt(900000) + 100000);
+        data.put("otp", newOtp);
+        redisTemplate.opsForValue().set(redisKey, data, 5, TimeUnit.MINUTES);
+
+        UserCreationRequest request = objectMapper.convertValue(data.get("request"), UserCreationRequest.class);
+
+        NotificationEvent notificationEvent = NotificationEvent.builder()
+                .channel("EMAIL")
+                .recipient(email)
+                .template("email-otp")
+                .subject("Resend Account verification")
+                .param(Map.of("name", request.getUsername(), "otp", newOtp))
+                .build();
+
+        kafkaProducerService.sendMessage("notification_topic", notificationEvent);
+    }
+
     public void register(UserCreationRequest request){
         if (!captchaService.verifyCaptcha(request.getCaptchaToken())){
             throw new AppException(ErrorCode.INVALID_CAPTCHA);
         }
+
+//        if (usernameBloomFilter.contains(request.getUsername())){
+//            if (userRepository.existsByUsername(request.getUsername())){
+//                throw new AppException(ErrorCode.USER_ALREADY_EXIST);
+//            }
+//        }
+//
+//        if (emailBloomFilter.contains(request.getEmail())){
+//            if (userRepository.existsByEmail(request.getEmail())){
+//                throw new AppException(ErrorCode.EMAIL_EXISTED);
+//            }
+//        }
+
         if (userRepository.existsByUsername(request.getUsername())){
             throw new AppException(ErrorCode.USER_ALREADY_EXIST);
         }
+
         if (userRepository.existsByEmail(request.getEmail())){
             throw new AppException(ErrorCode.EMAIL_EXISTED);
         }
@@ -183,10 +237,6 @@ public class AuthenticationService {
         User user = userMapper.toUser(request);
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-
-//        HashSet<Role> roles = new HashSet<>();
-//        roleRepository.findById(PredefinedRole.USER_ROLE).ifPresent(roles::add);
-//        user.setRoles(roles);
         var userRole = roleRepository.findById(PredefinedRole.USER_ROLE).orElse(null);
         if(userRole != null){
             user.setRoles(new HashSet<>(Collections.singletonList(userRole)));
@@ -194,7 +244,8 @@ public class AuthenticationService {
         user.setEnabled(true);
 
         userRepository.save(user);
-//        playlistService.createDefaultPlaylist(user);
+//        usernameBloomFilter.add(user.getUsername());
+//        emailBloomFilter.add(user.getEmail());
         redisTemplate.delete(redisKey);
 
         return AuthenticationResponse.builder()

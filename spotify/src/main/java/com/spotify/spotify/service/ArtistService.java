@@ -146,10 +146,6 @@ public class ArtistService {
 
         artist.setDeleted(true);
 
-//        if (artist.getSongs() != null || !artist.getSongs().isEmpty()){
-//            artist.getSongs().forEach(song -> song.setDeleted(true));
-//        }
-
         artistRepository.save(artist);
     }
 
@@ -163,10 +159,6 @@ public class ArtistService {
         if(!artist.isDeleted()) return;
 
         artist.setDeleted(false);
-
-//        if (artist.getSongs() != null && !artist.getSongs().isEmpty()){
-//            artist.getSongs().forEach(song -> song.setDeleted(false));
-//        }
 
         artistRepository.save(artist);
     }

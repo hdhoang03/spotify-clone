@@ -80,4 +80,8 @@ public class User {
     @Builder.Default
     @Column(name = "is_premium")
     Boolean isPremium = true;
+
+    @Column(name = "preferred_language")
+    @Builder.Default
+    String preferredLanguage = "en";
 }

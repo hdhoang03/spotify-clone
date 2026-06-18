@@ -2,10 +2,7 @@ package com.spotify.spotify.controller;
 
 import com.cloudinary.Api;
 import com.spotify.spotify.dto.ApiResponse;
-import com.spotify.spotify.dto.request.SupportRequest;
-import com.spotify.spotify.dto.request.UserCreationRequest;
-import com.spotify.spotify.dto.request.UserProfileUpdateRequest;
-import com.spotify.spotify.dto.request.UserUpdateRequest;
+import com.spotify.spotify.dto.request.*;
 import com.spotify.spotify.dto.response.*;
 import com.spotify.spotify.service.ArtistFollowService;
 import com.spotify.spotify.service.UserService;
@@ -200,6 +197,14 @@ public class UserController {
                 .build();
     }
 
+    @PatchMapping("/profile/language")
+    ApiResponse<Void> updatePreferredLanguage(@RequestBody LanguageUpdateRequest request){
+        userService.updatePreferredLanguage(request);
+        return ApiResponse.<Void>builder()
+                .code(1000)
+                .message("Language updated successfully!")
+                .build();
+    }
 
     @PostMapping("/{userId}/block")
     ApiResponse<Boolean> toggleBlockUser(@PathVariable String userId){

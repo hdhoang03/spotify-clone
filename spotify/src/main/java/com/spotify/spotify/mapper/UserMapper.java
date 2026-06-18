@@ -17,6 +17,7 @@ public interface UserMapper {
     @Mapping(target = "dob", source = "dob")
     UserResponse toUserResponse(User user);
 
+    @Mapping(target = "language", source = "preferredLanguage")
     @Mapping(target = "playlistCount", ignore = true)
     @Mapping(target = "followingArtistCount",ignore = true)
     @Mapping(target = "isFollowedByMe", ignore = true)
