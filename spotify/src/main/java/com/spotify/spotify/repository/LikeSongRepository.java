@@ -33,6 +33,7 @@ public interface LikeSongRepository extends JpaRepository<LikeSong, String> {
                 l.song.title, l.song.id, l.song.artist.id, l.song.artist.name, l.song.coverUrl, l.song.audioUrl, COUNT(l), l.song.duration
             )
             FROM LikeSong l
+            WHERE l.song.deleted = false
             GROUP BY l.song.title, l.song.id, l.song.artist.id, l.song.artist.name, l.song.coverUrl, l.song.duration, l.song.audioUrl
             ORDER BY COUNT(l) DESC
             """)

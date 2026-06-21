@@ -3,6 +3,7 @@ package com.spotify.spotify.service;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.spotify.spotify.configuration.RabbitMQConfig;
 import com.spotify.spotify.constaint.NotificationTargetType;
 import com.spotify.spotify.constaint.PredefinedRole;
 import com.spotify.spotify.dto.event.SseNotificationEvent;
@@ -14,7 +15,7 @@ import com.spotify.spotify.entity.UserBlock;
 import com.spotify.spotify.entity.UserFollow;
 import com.spotify.spotify.exception.AppException;
 import com.spotify.spotify.exception.ErrorCode;
-import com.spotify.spotify.kafka.KafkaProducerService;
+//import com.spotify.spotify.kafka.KafkaProducerService;
 import com.spotify.spotify.mapper.UserMapper;
 import com.spotify.spotify.repository.*;
 import lombok.AccessLevel;
@@ -53,7 +54,8 @@ public class UserService {
     Cloudinary cloudinary;
     EmailService emailService;
     UserBlockRepository userBlockRepository;
-    KafkaProducerService kafkaProducerService;
+    RabbitMQProducerService rabbitMQProducerService;
+//    KafkaProducerService kafkaProducerService;
 //    CaptchaService captchaService;
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -307,7 +309,8 @@ public class UserService {
                     .notificationPayload(payload)
                     .build();
 
-            kafkaProducerService.sendMessage("sse_topic", event);
+//            kafkaProducerService.sendMessage("sse_topic", event);
+            rabbitMQProducerService.sendMessage(RabbitMQConfig.SSE_QUEUE, event);
 
             userRepository.save(currentUser);
             userRepository.save(targetUser);

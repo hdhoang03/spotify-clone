@@ -32,5 +32,6 @@ public class SongResponse implements Serializable {
     LocalDate releaseDate;
     Long playCount;
     Long streamCount;
+    Boolean is_deleted;
     List<FeaturedArtistInfo> featuredArtists;
 }

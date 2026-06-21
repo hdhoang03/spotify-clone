@@ -44,6 +44,18 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
+  # 5. Message Broker: RabbitMQ (Mới thêm)
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: rabbitmq-spotify
+    restart: always
+    ports:
+      - "5672:5672"   # Port chính để Spring Boot kết nối gửi/nhận tin nhắn
+      - "15672:15672" # Port giao diện Dashboard quản lý (truy cập qua trình duyệt)
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
 # Định nghĩa volume để lưu trữ dữ liệu database ngay cả khi xóa container
 volumes:
   mysql_data:

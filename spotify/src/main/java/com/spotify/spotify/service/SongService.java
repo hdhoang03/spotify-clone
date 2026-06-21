@@ -2,6 +2,7 @@ package com.spotify.spotify.service;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+import com.spotify.spotify.configuration.RabbitMQConfig;
 import com.spotify.spotify.constaint.NotificationTargetType;
 import com.spotify.spotify.dto.event.SseNotificationEvent;
 import com.spotify.spotify.dto.request.SongRequest;
@@ -11,7 +12,7 @@ import com.spotify.spotify.dto.response.SongResponse;
 import com.spotify.spotify.entity.*;
 import com.spotify.spotify.exception.AppException;
 import com.spotify.spotify.exception.ErrorCode;
-import com.spotify.spotify.kafka.KafkaProducerService;
+//import com.spotify.spotify.kafka.KafkaProducerService;
 import com.spotify.spotify.mapper.SongMapper;
 import com.spotify.spotify.repository.*;
 import lombok.AccessLevel;
@@ -50,7 +51,8 @@ public class SongService {
     AlbumRepository albumRepository;
     ArtistRepository artistRepository;
     CategoryRepository categoryRepository;
-    KafkaProducerService kafkaProducerService;
+//    KafkaProducerService kafkaProducerService;
+    RabbitMQProducerService rabbitMQProducerService;
     SongMapper songMapper;
     Cloudinary cloudinary;
 
@@ -107,7 +109,8 @@ public class SongService {
         song = songRepository.save(song);
         //Hàm bắn thông báo khi có bài hát mới
         try {
-            this.sendNewSongNotificationViaKafka(
+//            this.sendNewSongNotificationViaKafka(
+            this.sendNewSongNotificationViaRabiitMQ(
                     artist.getId(),
                     artist.getName(),
                     song.getTitle(),
@@ -255,7 +258,8 @@ public class SongService {
          songRepository.delete(song);
     }
 
-    public void sendNewSongNotificationViaKafka(String artistId, String artistName, String songTitle, String coverUrl){
+    //sendNewSongNotificationViaKafka
+    public void sendNewSongNotificationViaRabiitMQ(String artistId, String artistName, String songTitle, String coverUrl){
         NotificationResponse payload = NotificationResponse.builder()
                 .id(UUID.randomUUID().toString())
                 .type("NEW_SONG")
@@ -272,7 +276,8 @@ public class SongService {
                 .notificationPayload(payload)
                 .build();
 
-        kafkaProducerService.sendMessage("sse_topic", event);
+//        kafkaProducerService.sendMessage("sse_topic", event);
+        rabbitMQProducerService.sendMessage(RabbitMQConfig.SSE_QUEUE, event);
     }
 
     public Page<SongResponse> searchSongs(String keyword, String artist, String category, Integer year, boolean isDeleted, Pageable pageable){

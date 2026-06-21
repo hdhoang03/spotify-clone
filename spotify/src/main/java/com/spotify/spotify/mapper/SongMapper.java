@@ -40,6 +40,7 @@ public interface SongMapper {
 //    @Mapping(source = "featuredArtists", target = "featuredArtists", qualifiedByName = "mapArtistInfo") //06067 gra
     @Mapping(source = "category.id", target = "categoryId")
     @Mapping(source = "artist.id", target = "artistId")
+    @Mapping(source = "deleted", target = "is_deleted")
     SongResponse toSongResponse(Song song);
 
     @Named("toSongSearchResponse")

@@ -49,7 +49,7 @@ public interface SongStreamRepository extends JpaRepository<SongStream, String> 
                 s.song.duration
             )
             FROM SongStream s
-            WHERE s.validStream = true
+            WHERE s.validStream = true AND s.song.deleted = false
             GROUP BY s.song.id, s.song.title, song.artist.id, s.song.artist.name,
                 s.song.coverUrl, s.song.audioUrl, s.song.duration
             ORDER BY COUNT(s) DESC

@@ -1,5 +1,6 @@
 package com.spotify.spotify.service;
 
+import com.spotify.spotify.configuration.RabbitMQConfig;
 import com.spotify.spotify.constaint.NotificationTargetType;
 import com.spotify.spotify.dto.event.SseNotificationEvent;
 import com.spotify.spotify.dto.request.AdminNotificationRequest;
@@ -7,7 +8,7 @@ import com.spotify.spotify.dto.response.NotificationResponse;
 import com.spotify.spotify.entity.Notification;
 import com.spotify.spotify.exception.AppException;
 import com.spotify.spotify.exception.ErrorCode;
-import com.spotify.spotify.kafka.KafkaProducerService;
+//import com.spotify.spotify.kafka.KafkaProducerService;
 import com.spotify.spotify.repository.NotificationRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -25,8 +26,9 @@ import java.time.LocalDateTime;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @RequiredArgsConstructor
 public class NotificationService {
-    KafkaProducerService kafkaProducerService;
+//    KafkaProducerService kafkaProducerService;
     NotificationRepository notificationRepository;
+    RabbitMQProducerService rabbitMQProducerService;
 
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
@@ -46,7 +48,8 @@ public class NotificationService {
                 .notificationPayload(payload)
                 .build();
 
-        kafkaProducerService.sendMessage("sse_topic", event);
+//        kafkaProducerService.sendMessage("sse_topic", event);
+        rabbitMQProducerService.sendMessage(RabbitMQConfig.SSE_QUEUE, event);
     }
 
     public Page<NotificationResponse> getMyNotifications(Pageable pageable){

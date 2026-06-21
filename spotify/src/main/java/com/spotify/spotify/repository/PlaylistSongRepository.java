@@ -11,8 +11,13 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.Optional;
 
 public interface PlaylistSongRepository extends JpaRepository<PlaylistSong, String> {
+    @Query("SELECT ps FROM PlaylistSong ps WHERE ps.playlist.id = :playlistId AND ps.song.deleted = false")
     Page<PlaylistSong> findByPlaylistIdOrderByAddedAtDesc(String playlistId, Pageable pageable);
+
+//    Hoặc cái này cũng được
+//    Page<PlaylistSong> findByPlaylist_IdAndSong_DeletedFalseOrderByAddedAtDesc(String playlistId, Pageable pageable);
     Optional<PlaylistSong> findByPlaylistIdAndSongId(String playlistId, String songId);
+
     boolean existsByPlaylistIdAndSongId(String playlistId, String songId);
 
     @Modifying

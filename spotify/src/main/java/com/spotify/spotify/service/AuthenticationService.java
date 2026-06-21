@@ -6,6 +6,7 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import com.spotify.spotify.configuration.RabbitMQConfig;
 import com.spotify.spotify.configuration.SecurityConfig;
 import com.spotify.spotify.constaint.PredefinedRole;
 import com.spotify.spotify.dto.event.NotificationEvent;
@@ -16,7 +17,7 @@ import com.spotify.spotify.entity.InvalidatedToken;
 import com.spotify.spotify.entity.User;
 import com.spotify.spotify.exception.AppException;
 import com.spotify.spotify.exception.ErrorCode;
-import com.spotify.spotify.kafka.KafkaProducerService;
+//import com.spotify.spotify.kafka.KafkaProducerService;
 import com.spotify.spotify.mapper.UserMapper;
 import com.spotify.spotify.repository.InvalidTokenRepository;
 import com.spotify.spotify.repository.RoleRepository;
@@ -57,10 +58,11 @@ public class AuthenticationService {
     UserMapper userMapper;
     RoleRepository roleRepository;
     ObjectMapper objectMapper;
-    KafkaProducerService kafkaProducerService;
+//    KafkaProducerService kafkaProducerService;
     OutboundIdentityClient outboundIdentityClient;
     OutboundUserClient outboundUserClient;
     CaptchaService captchaService;
+    RabbitMQProducerService rabbitMQProducerService;
 //    RedissonClient redissonClient;
 //
 //    @NonFinal
@@ -171,7 +173,8 @@ public class AuthenticationService {
                 .param(Map.of("name", request.getUsername(), "otp", newOtp))
                 .build();
 
-        kafkaProducerService.sendMessage("notification_topic", notificationEvent);
+//        kafkaProducerService.sendMessage("notification_topic", notificationEvent);
+        rabbitMQProducerService.sendMessage(RabbitMQConfig.NOTIFICATION_QUEUE, notificationEvent);
     }
 
     public void register(UserCreationRequest request){
@@ -217,7 +220,8 @@ public class AuthenticationService {
                 .param(Map.of("name", request.getUsername(), "otp", otp))
                 .build();
 
-        kafkaProducerService.sendMessage("notification_topic", notificationEvent);//Gửi object và topic
+//        kafkaProducerService.sendMessage("notification_topic", notificationEvent);//Gửi object và topic
+        rabbitMQProducerService.sendMessage(RabbitMQConfig.NOTIFICATION_QUEUE, notificationEvent);
     }
 
     public AuthenticationResponse verifyAndCreateUser(String email, String otpCode){
@@ -287,7 +291,8 @@ public class AuthenticationService {
                 .param(Map.of("name", user.getUsername(), "otp", otp))
                 .build();
 
-        kafkaProducerService.sendMessage("notification_topic", event);
+//        kafkaProducerService.sendMessage("notification_topic", event);
+        rabbitMQProducerService.sendMessage(RabbitMQConfig.NOTIFICATION_QUEUE, event);
     }
 
     public void resetPassword(ResetPasswordRequest request){

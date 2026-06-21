@@ -8,7 +8,6 @@ import com.spotify.spotify.entity.SongStream;
 import com.spotify.spotify.entity.User;
 import com.spotify.spotify.exception.AppException;
 import com.spotify.spotify.exception.ErrorCode;
-import com.spotify.spotify.kafka.KafkaProducerService;
 import com.spotify.spotify.mapper.ArtistMapper;
 import com.spotify.spotify.mapper.SongStreamMapper;
 import com.spotify.spotify.repository.SongRepository;
@@ -42,7 +41,6 @@ public class SongStreamService {
     SongRepository songRepository;
     UserRepository userRepository;
     RedisTemplate<String, Object> redisTemplate;
-    KafkaProducerService kafkaProducerService;
     ArtistMapper artistMapper;
 
     static String PLAY_COOLDOWN_KEY_FORMAT = "play_cooldown:%s:%s";
