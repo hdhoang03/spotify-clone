@@ -1,0 +1,41 @@
+package com.spotify.spotify.repository;
+
+import com.spotify.spotify.dto.response.TopLikeSongResponse;
+import com.spotify.spotify.entity.LikeSong;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
+@Repository
+public interface LikeSongRepository extends JpaRepository<LikeSong, String> {
+    Boolean existsByUser_IdAndSong_Id(String userId, String songId);//Kiểm tra user đã like chưa
+
+    @Query("""
+            SELECT l FROM LikeSong l
+            JOIN FETCH l.song
+            WHERE l.user.id =:userId
+            """)
+    Page<LikeSong> findAllByUserIdFetchSong(String userId, Pageable pageable); //Danh sách bài hát user đã like
+
+    Long countBySong_Id(String songId); //Đếm số lượt like của bài hát
+
+    void deleteByUser_IdAndSong_Id(String userId, String songId); //unlike
+
+    @Query("""
+            SELECT new com.spotify.spotify.dto.response.TopLikeSongResponse(
+                l.song.title, l.song.id, l.song.artist.id, l.song.artist.name, l.song.coverUrl, l.song.audioUrl, COUNT(l), l.song.duration
+            )
+            FROM LikeSong l
+            WHERE l.song.deleted = false
+            GROUP BY l.song.title, l.song.id, l.song.artist.id, l.song.artist.name, l.song.coverUrl, l.song.duration, l.song.audioUrl
+            ORDER BY COUNT(l) DESC
+            """)
+    Page<TopLikeSongResponse> findTopLikedSongs(Pageable pageable);
+}

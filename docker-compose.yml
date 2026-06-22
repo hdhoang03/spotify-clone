@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # 1. Database: MySQL 8.0.45
+  mysql:
+    image: mysql:8.0.45-debian
+    container_name: mysql-spotify
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: spotify
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  # 2. Cache: Redis
+  redis:
+    image: redis:8.2.4-alpine
+    container_name: redis-spotify
+    restart: always
+    ports:
+      - "6379:6379"
+
+  # 3. Zookeeper (Bắt buộc cho Kafka)
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: zookeeper-spotify
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  # 4. Message Broker: Kafka
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: kafka-spotify
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  # 5. Message Broker: RabbitMQ (Mới thêm)
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: rabbitmq-spotify
+    restart: always
+    ports:
+      - "5672:5672"   # Port chính để Spring Boot kết nối gửi/nhận tin nhắn
+      - "15672:15672" # Port giao diện Dashboard quản lý (truy cập qua trình duyệt)
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
+# Định nghĩa volume để lưu trữ dữ liệu database ngay cả khi xóa container
+volumes:
+  mysql_data:

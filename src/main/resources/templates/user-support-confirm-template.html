@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #121212; margin: 0; padding: 20px; color: #ffffff; }
+        .container { background-color: #282828; max-width: 600px; margin: 0 auto; padding: 40px; border-radius: 8px; text-align: center; }
+        h2 { color: #1db954; font-size: 24px; margin-bottom: 10px; }
+        p { font-size: 16px; line-height: 1.5; color: #b3b3b3; margin-bottom: 20px; }
+        .btn { display: inline-block; background-color: #1db954; color: #000000; text-decoration: none; padding: 12px 30px; border-radius: 50px; font-weight: bold; font-size: 14px; margin-top: 10px; }
+        .footer { margin-top: 40px; font-size: 12px; color: #535353; border-top: 1px solid #3e3e3e; padding-top: 20px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Xin chào, <span th:text="${name}"></span>!</h2>
+    <p>Cảm ơn bạn đã liên hệ với đội ngũ hỗ trợ của <strong>SpringTunes</strong>.</p>
+    <p>Chúng tôi đã nhận được yêu cầu của bạn và đội ngũ kỹ thuật đang tiến hành kiểm tra. Chúng tôi sẽ cố gắng phản hồi lại cho bạn trong vòng <strong>24-48 giờ làm việc</strong> tiếp theo.</p>
+    <p>Trong lúc chờ đợi, bạn có thể tiếp tục tận hưởng không gian âm nhạc của mình.</p>
+    <a href="http://localhost:5173" class="btn">Quay lại Nghe Nhạc</a>
+
+    <div class="footer">
+        Trân trọng,<br>Đội ngũ SpringTunes
+    </div>
+</div>
+</body>
+</html>

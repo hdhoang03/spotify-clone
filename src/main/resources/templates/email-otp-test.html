@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <title>Mã xác thực: <span th:text="${otp}">123456</span></title> <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root { color-scheme: light dark; }
+        body {
+            font-family: 'Lexend', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.5;
+            margin: 0;
+            padding: 40px 20px;
+            color: #121212;
+            background-color: #ffffff;
+        }
+
+        .content {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            color: #1DB954;
+            font-weight: 700;
+            font-size: 18px;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 32px;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .otp {
+            font-size: 40px;
+            font-weight: 700;
+            color: #1DB954;
+            margin: 24px 0;
+            letter-spacing: 4px;
+        }
+
+        .footer {
+            margin-top: 48px;
+            font-size: 13px;
+            color: #6A6A6A;
+            border-top: 1px solid #eeeeee;
+            padding-top: 24px;
+        }
+
+        /* Dark Mode */
+        @media (prefers-color-scheme: dark) {
+            body { background-color: #121212 !important; color: #ffffff !important; }
+            .footer { border-top-color: #282828 !important; color: #A7A7A7 !important; }
+            h1 { color: #ffffff !important; }
+        }
+    </style>
+</head>
+<body>
+<div class="content">
+    <a href="#" class="logo">SpringTunes</a>
+
+    <p style="margin-bottom: 8px;">Xin chào <strong th:text="${name}">User</strong>,</p>
+    <h1>Mã xác thực của bạn là:</h1>
+
+    <div class="otp" th:text="${otp}">123456</div>
+
+    <p style="font-size: 14px; color: #6A6A6A;">
+        Mã này sẽ hết hạn sau <strong>5 phút</strong>.<br>
+        Vui lòng không chia sẻ mã này với bất kỳ ai.
+    </p>
+
+    <div class="footer">
+        &copy; 2026 SpringTunes Team. <br>
+        Nếu bạn không yêu cầu mã này, bạn có thể an tâm bỏ qua email.
+    </div>
+</div>
+</body>
+</html>
