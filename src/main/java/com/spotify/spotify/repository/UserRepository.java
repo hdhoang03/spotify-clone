@@ -4,6 +4,7 @@ import com.spotify.spotify.dto.response.UserGrowthResponse;
 import com.spotify.spotify.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -17,6 +18,7 @@ import java.util.Optional;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, String> {
+    @EntityGraph(attributePaths = "roles")
     Optional<User> findByUsername(String username);
     boolean existsByUsername(String username);
     boolean existsByEmail(String email);

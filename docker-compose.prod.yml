@@ -1,0 +1,75 @@
+services:
+  adminer-prod:
+    image: adminer:latest
+    container_name: adminer-spotify-prod
+    restart: always
+    ports:
+      - "8082:8080" # Truy cập công cụ này qua cổng 8082 trên trình duyệt
+    networks:
+      - springtunes-network-prod
+  # 1. Database: MySQL (Cấu hình riêng cho Prod)
+  mysql-prod:
+    image: mysql:8.0.45-debian
+    container_name: mysql-spotify-prod
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+    volumes:
+      - mysql_data_prod:/var/lib/mysql
+#    ports:
+#      - "3307:3306"
+    networks:
+      - springtunes-network-prod
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 2. Cache: Redis
+  redis-prod:
+    image: redis:8.2.4-alpine
+    container_name: redis-spotify-prod
+    restart: always
+    networks:
+      - springtunes-network-prod
+
+  # 3. Message Broker: RabbitMQ
+  rabbitmq-prod:
+    image: rabbitmq:3.13-management-alpine
+    container_name: rabbitmq-spotify-prod
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    ports:
+      - "15673:15672" # Đổi cổng Dashboard thành 15673 để không trùng với 15672 của Local
+    networks:
+      - springtunes-network-prod
+
+  # 4. Ứng dụng Spring Boot
+  api-prod:
+    build: .
+    container_name: springtunes-api-prod
+    restart: always
+    ports:
+      - "8081:8080" # Mở cổng 8081 cho môi trường test/prod, tách biệt với 8080 của local
+    depends_on:
+      mysql-prod:
+        condition: service_healthy
+      redis-prod:
+        condition: service_started
+      rabbitmq-prod:
+        condition: service_started
+    env_file:
+      - .env.prod
+    networks:
+      - springtunes-network-prod
+
+networks:
+  springtunes-network-prod:
+    driver: bridge
+
+volumes:
+  mysql_data_prod:

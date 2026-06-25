@@ -4,6 +4,7 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.spotify.spotify.dto.request.AlbumRequest;
 import com.spotify.spotify.dto.response.AlbumResponse;
+import com.spotify.spotify.dto.response.CloudinaryResponse;
 import com.spotify.spotify.dto.response.SongResponse;
 import com.spotify.spotify.entity.Album;
 import com.spotify.spotify.entity.Artist;
@@ -43,11 +44,11 @@ import java.util.stream.Collectors;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
 public class AlbumService {
-    AlbumRepository albumRepository;
+    CloudinaryService cloudinaryService;
     ArtistRepository artistRepository;
+    AlbumRepository albumRepository;
     SongRepository songRepository;
     AlbumMapper albumMapper;
-    Cloudinary cloudinary;
     SongMapper songMapper;
 
     private static final String UPLOAD_DIR = "uploads/albums/";
@@ -66,8 +67,10 @@ public class AlbumService {
         }
 
         Album album = albumMapper.toAlbum(request);
-        String avatarPath = saveFileCloud(request.getAvatarUrl(), "spotify/albums"); //"spotify/albums"
-        album.setAlbumUrl(avatarPath);
+        CloudinaryResponse cloudRes = cloudinaryService.uploadFile(request.getAvatarUrl(), "spotify/albums"); //"spotify/albums"
+        if (cloudRes != null) {
+            album.setAlbumUrl(cloudRes.getUrl());
+        }
 
         Artist artist = artistRepository.findById(request.getArtistId())
                 .orElseThrow(() -> new AppException(ErrorCode.ARTIST_NOT_FOUND));
@@ -206,15 +209,22 @@ public class AlbumService {
         albumMapper.updateAlbum(album, request);
 
         if (request.getAvatarUrl() != null && !request.getAvatarUrl().isEmpty()){
-            deleteFileCloud(album.getAlbumUrl(), "image");
-            String avatarPath = saveFileCloud(request.getAvatarUrl(), "spotify/albums");
-            album.setAlbumUrl(avatarPath);
+            if (album.getAlbumUrl() != null){
+                cloudinaryService.deleteFile(album.getAlbumUrl(), "image");
+            }
+            //up file mới
+            CloudinaryResponse cloudRes = cloudinaryService.uploadFile(request.getAvatarUrl(),"spotify/albums");
+            if (cloudRes != null){
+                album.setAlbumUrl(cloudRes.getUrl());
+            }
         }
+
         if (request.getArtistId() != null){
             Artist artist = artistRepository.findById(request.getArtistId())
                     .orElseThrow(() -> new AppException(ErrorCode.ARTIST_NOT_FOUND));
             album.setArtists(new HashSet<>(Set.of(artist)));
         }
+
         album = albumRepository.save(album);
         return albumMapper.toAlbumResponse(album);
     }
@@ -231,7 +241,7 @@ public class AlbumService {
         }
 
         if (album.getAlbumUrl() != null){
-            deleteFileCloud(album.getAlbumUrl(), "image");
+            cloudinaryService.deleteFile(album.getAlbumUrl(), "image");
         }
 
         albumRepository.delete(album);
@@ -256,49 +266,49 @@ public class AlbumService {
         });
     }
 
-    private String saveFileCloud(MultipartFile file, String folder){
-        if(file == null || file.isEmpty()) return null;
-        try {
-            Map uploadResult = cloudinary.uploader().upload(
-                    file.getBytes(),
-                    ObjectUtils.asMap(
-                            "folder", folder,
-                            "resource_type", "auto"
-                    )
-            );
-            return uploadResult.get("secure_url").toString();
-        } catch (Exception e){
-            throw new AppException(ErrorCode.FILE_UPLOAD_FAILED);
-        }
-    }
-
-    private String getPublicIdFromUrl(String url){
-        if (url == null || url.isEmpty()) return null;
-        try {
-            Pattern pattern = Pattern.compile("upload/(?:v\\d+/)?([^.]+)\\.[a-z0-9]+$");
-            Matcher matcher = pattern.matcher(url);
-            if (matcher.find()){
-                return matcher.group(1);
-            }
-            return null;
-        } catch (Exception e){
-            log.error("Error parsing Public ID from URL: {}", url);
-            return null;
-        }
-
-    }
-
-    private void deleteFileCloud(String url, String resourceType){
-        String publicId = getPublicIdFromUrl(url);
-        if (publicId != null){
-            try {
-                cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("resource_type", resourceType));
-                log.info("Deleted file on Cloudinary: {} (Type: {})", publicId, resourceType);
-            } catch (Exception e){
-                log.error("Failed to delete file on Cloudinary: {}", publicId);
-            }
-        }
-    }
+//    private String saveFileCloud(MultipartFile file, String folder){
+//        if(file == null || file.isEmpty()) return null;
+//        try {
+//            Map uploadResult = cloudinary.uploader().upload(
+//                    file.getBytes(),
+//                    ObjectUtils.asMap(
+//                            "folder", folder,
+//                            "resource_type", "auto"
+//                    )
+//            );
+//            return uploadResult.get("secure_url").toString();
+//        } catch (Exception e){
+//            throw new AppException(ErrorCode.FILE_UPLOAD_FAILED);
+//        }
+//    }
+//
+//    private String getPublicIdFromUrl(String url){
+//        if (url == null || url.isEmpty()) return null;
+//        try {
+//            Pattern pattern = Pattern.compile("upload/(?:v\\d+/)?([^.]+)\\.[a-z0-9]+$");
+//            Matcher matcher = pattern.matcher(url);
+//            if (matcher.find()){
+//                return matcher.group(1);
+//            }
+//            return null;
+//        } catch (Exception e){
+//            log.error("Error parsing Public ID from URL: {}", url);
+//            return null;
+//        }
+//
+//    }
+//
+//    private void deleteFileCloud(String url, String resourceType){
+//        String publicId = getPublicIdFromUrl(url);
+//        if (publicId != null){
+//            try {
+//                cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("resource_type", resourceType));
+//                log.info("Deleted file on Cloudinary: {} (Type: {})", publicId, resourceType);
+//            } catch (Exception e){
+//                log.error("Failed to delete file on Cloudinary: {}", publicId);
+//            }
+//        }
+//    }
 
     private String saveFile(MultipartFile file){
         if(file == null || file.isEmpty()) return null;

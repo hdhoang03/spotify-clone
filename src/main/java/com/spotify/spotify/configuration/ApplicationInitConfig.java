@@ -35,10 +35,10 @@ public class ApplicationInitConfig {
     static final String ADMIN_EMAIL = "hodanghoang2003@gmail.com";
 
     @Bean
-    @ConditionalOnProperty(
-            prefix = "spring",
-            value = "datasource.driverClassName",
-            havingValue = "com.mysql.cj.jdbc.Driver")
+//    @ConditionalOnProperty(
+//            prefix = "spring",
+//            value = "datasource.driverClassName",
+//            havingValue = "com.mysql.cj.jdbc.Driver")
     ApplicationRunner applicationRunner(UserRepository userRepository, RoleRepository roleRepository){
         return args -> {
             log.info("Initializing application....... Please wait.");

@@ -54,7 +54,7 @@ public class SongService {
 //    KafkaProducerService kafkaProducerService;
     RabbitMQProducerService rabbitMQProducerService;
     SongMapper songMapper;
-    Cloudinary cloudinary;
+    CloudinaryService cloudinaryService;
 
     private static final String UPLOAD_DIR = "uploads/";
 
@@ -87,8 +87,8 @@ public class SongService {
             song.setFeaturedArtists(featuredArtists);
         }
 
-        CloudinaryResponse coverPath = saveFileCloud(request.getCoverUrl(), "covers");
-        CloudinaryResponse audioPath = saveFileCloud(request.getAudioUrl(), "audios");
+        CloudinaryResponse coverPath = cloudinaryService.uploadFile(request.getCoverUrl(), "covers");
+        CloudinaryResponse audioPath = cloudinaryService.uploadFile(request.getAudioUrl(), "audios");
 
         //set thủ công vì trong mapping ignore
         song.setAlbum(album);
@@ -110,7 +110,7 @@ public class SongService {
         //Hàm bắn thông báo khi có bài hát mới
         try {
 //            this.sendNewSongNotificationViaKafka(
-            this.sendNewSongNotificationViaRabiitMQ(
+            this.sendNewSongNotificationViaRabitMQ(
                     artist.getId(),
                     artist.getName(),
                     song.getTitle(),
@@ -149,16 +149,18 @@ public class SongService {
         }
 
         if(request.getCoverUrl() != null && !request.getCoverUrl().isEmpty()){
-            deleteFileCloud(song.getCoverUrl(), "image");
-            CloudinaryResponse coverPath = saveFileCloud(request.getCoverUrl(), "covers");
-            song.setCoverUrl(coverPath.getUrl());
+            if (song.getCoverUrl() != null) cloudinaryService.deleteFile(song.getCoverUrl(), "image");
+            CloudinaryResponse coverPath = cloudinaryService.uploadFile(request.getCoverUrl(), "covers");
+            if (coverPath != null) song.setCoverUrl(coverPath.getUrl());
         }
 
         if (request.getAudioUrl() != null && !request.getAudioUrl().isEmpty()){
-            deleteFileCloud(song.getAudioUrl(), "video");
-            CloudinaryResponse audioPath = saveFileCloud(request.getAudioUrl(), "audios");
-            song.setAudioUrl(audioPath.getUrl());
-            song.setDuration(audioPath.getDuration());
+            if (song.getAudioUrl() != null) cloudinaryService.deleteFile(song.getAudioUrl(), "video");
+            CloudinaryResponse audioPath = cloudinaryService.uploadFile(request.getAudioUrl(), "audios");
+            if (audioPath != null) {
+                song.setAudioUrl(audioPath.getUrl());
+                song.setDuration(audioPath.getDuration());
+            }
         }
 
         if (request.getFeaturedArtistIds() != null) {
@@ -248,18 +250,20 @@ public class SongService {
     public void forceDeleteSong(String id){
         Song song = songRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.SONG_NOT_FOUND));
+
         if (song.getAudioUrl() != null){
-            deleteFileCloud(song.getAudioUrl(), "video");
+            cloudinaryService.deleteFile(song.getAudioUrl(), "video");
         }
-         if (song.getCoverUrl() != null){
-            deleteFileCloud(song.getCoverUrl(), "image");
-         }
+
+        if (song.getCoverUrl() != null){
+            cloudinaryService.deleteFile(song.getCoverUrl(), "image");
+        }
 
          songRepository.delete(song);
     }
 
     //sendNewSongNotificationViaKafka
-    public void sendNewSongNotificationViaRabiitMQ(String artistId, String artistName, String songTitle, String coverUrl){
+    public void sendNewSongNotificationViaRabitMQ(String artistId, String artistName, String songTitle, String coverUrl){
         NotificationResponse payload = NotificationResponse.builder()
                 .id(UUID.randomUUID().toString())
                 .type("NEW_SONG")
@@ -307,81 +311,5 @@ public class SongService {
 
         return songRepository.findAll(spec, pageable)
                 .map(songMapper::toSongResponse);
-    }
-
-    private CloudinaryResponse saveFileCloud(MultipartFile file, String folder) { //cloudinary
-        if (file == null || file.isEmpty()) return null;
-
-        try {
-            Map uploadResult = cloudinary.uploader().upload(
-                    file.getBytes(),
-                    ObjectUtils.asMap(
-                            "folder", folder,
-                            "resource_type", "auto" //Cho phép up ảnh, mp3 và mp4
-                    )
-            );
-            String url = (String) uploadResult.get("secure_url");
-            Object durationObj = uploadResult.get("duration");
-            Double duration = 0.0;
-
-            if (durationObj != null) {
-                if (durationObj instanceof Double) {
-                    duration = (Double) durationObj;
-                } else if (durationObj instanceof Integer) {
-                    duration = ((Integer) durationObj).doubleValue();
-                }
-            }
-            return CloudinaryResponse.builder()
-                    .url(url)
-                    .duration(duration)
-                    .build();
-        } catch (Exception e){
-            throw new AppException(ErrorCode.FILE_UPLOAD_FAILED);
-        }
-    }
-
-    private String saveFile(MultipartFile file, String folder){ //local
-        if(file == null || file.isEmpty()) return null;
-        try {
-            Path dirPath = Paths.get(UPLOAD_DIR + folder);
-            if (!Files.exists(dirPath)){
-                Files.createDirectories(dirPath);
-            }
-
-            String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-            Path filePath = dirPath.resolve(filename);
-            Files.copy(file.getInputStream(), filePath);
-
-            return "/" + UPLOAD_DIR + folder + "/" + filename;
-        } catch (IOException e){
-            throw new AppException(ErrorCode.FILE_UPLOAD_FAILED);
-        }
-    }
-
-    private String getPublicIdFromUrl(String url){
-        if (url == null || url.isEmpty()) return null;
-        try {
-            Pattern pattern = Pattern.compile("upload/(?:v\\d+/)?([^.]+)\\.[a-z0-9]+$");
-            Matcher matcher = pattern.matcher(url);
-            if (matcher.find()){
-                return matcher.group(1);
-            }
-            return null;
-        } catch (Exception e){
-            log.error("Error parsing Public ID from URL: {}", url);
-            return null;
-        }
-    }
-
-    private void deleteFileCloud(String url, String resourceType){
-        String publicId = getPublicIdFromUrl(url);
-        if (publicId != null){
-            try {
-                cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("resource_type", resourceType));
-                log.info("Deleted file on Cloudinary: {} (Type: {})", publicId, resourceType);
-            }catch (IOException e){
-                log.error("Failed to delete file on Cloudinary: {}", publicId);
-            }
-        }
     }
 }

@@ -6,6 +6,7 @@ import com.spotify.spotify.constaint.CategoryType;
 import com.spotify.spotify.dto.request.CategoryRequest;
 import com.spotify.spotify.dto.request.CategoryUpdateRequest;
 import com.spotify.spotify.dto.response.CategoryResponse;
+import com.spotify.spotify.dto.response.CloudinaryResponse;
 import com.spotify.spotify.entity.Category;
 import com.spotify.spotify.entity.Song;
 import com.spotify.spotify.exception.AppException;
@@ -41,7 +42,7 @@ import java.util.stream.Collectors;
 
 //Nhược điểm: Dữ liệu lưu sẽ là chuỗi nhị phân khó đọc bằng mắt khi dùng redis-cli.
 public class CategoryService {
-    Cloudinary cloudinary;
+    CloudinaryService cloudinaryService;
     SongRepository songRepository;
     CategoryRepository categoryRepository;
     CategoryMapper categoryMapper;
@@ -58,9 +59,10 @@ public class CategoryService {
         Category category = categoryMapper.toCategory(request);
 
         if (request.getCoverUrl() != null && !request.getCoverUrl().isEmpty()){
-            String coverPath = saveFileCloud(request.getCoverUrl(), "spotify/categories");//"spotify/categories"
-            category.setCoverUrl(coverPath);
+            CloudinaryResponse cloudRes = cloudinaryService.uploadFile(request.getCoverUrl(), "spotify/categories");
+            if (cloudRes != null) category.setCoverUrl(cloudRes.getUrl());
         }
+
         category = categoryRepository.save(category);
         return categoryMapper.toCategoryResponse(category);
     }
@@ -129,13 +131,15 @@ public class CategoryService {
                 && categoryRepository.existsByNameIgnoreCase(request.getName())){
             throw new AppException(ErrorCode.CATEGORY_ALREADY_EXISTS);
         }
+
         if(request.getCoverUrl() != null && !request.getCoverUrl().isEmpty()){
             if (category.getCoverUrl() != null){
-                deleteFileCloud(category.getCoverUrl(), "image");
+                cloudinaryService.deleteFile(category.getCoverUrl(), "image");
             }
-            String coverPath = saveFileCloud(request.getCoverUrl(), "spotify/categories");
-            category.setCoverUrl(coverPath);
+            CloudinaryResponse cloudRes = cloudinaryService.uploadFile(request.getCoverUrl(), "spotify/categories");
+            if (cloudRes != null) category.setCoverUrl(cloudRes.getUrl());
         }
+
         category = categoryRepository.save(category);
         return categoryMapper.toCategoryResponse(category);
     }
@@ -198,44 +202,5 @@ public class CategoryService {
 
         category.setDisplayOrder(newOrder);
         return categoryMapper.toCategoryResponse(categoryRepository.save(category));
-    }
-
-    private String saveFileCloud(MultipartFile file, String folder){
-        if(file == null || file.isEmpty()) return null;
-        try {
-            Map uploadResult = cloudinary.uploader().upload(
-                    file.getBytes(),
-                    ObjectUtils.asMap("folder", folder,
-                            "resource_type", "auto"
-                    )
-            );
-            return uploadResult.get("secure_url").toString();
-        } catch (Exception e){
-            throw new AppException(ErrorCode.FILE_UPLOAD_FAILED);
-        }
-    }
-
-    private String getPublicFromUrl(String url){
-        if (url == null || url.isEmpty()) return null;
-        try {
-            Pattern pattern = Pattern.compile("upload/(?:v\\d+/)?([^.]+)\\.[a-z0-9]+$");
-            Matcher matcher = pattern.matcher(url);
-            return matcher.find() ? matcher.group(1) : null;
-        } catch (Exception e){
-            log.error("Error parsing Public ID: {}", url);
-            return null;
-        }
-    }
-
-    private void deleteFileCloud(String url, String resourceType){
-        String publicId = getPublicFromUrl(url);
-        if (publicId != null){
-            try {
-                cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("resource_type", resourceType));
-                log.info("Deleted Cloudinary file: {}", publicId);
-            } catch (Exception e){
-                log.error("Failed to deleted Cloudinary file: {}", publicId);
-            }
-        }
     }
 }

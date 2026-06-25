@@ -4,6 +4,7 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.spotify.spotify.dto.request.PlaylistRequest;
 import com.spotify.spotify.dto.request.PlaylistUpdateRequest;
+import com.spotify.spotify.dto.response.CloudinaryResponse;
 import com.spotify.spotify.dto.response.PlaylistResponse;
 import com.spotify.spotify.dto.response.PlaylistSongResponse;
 import com.spotify.spotify.entity.Playlist;
@@ -41,7 +42,7 @@ public class PlaylistService {
     PlaylistMapper playlistMapper;
     PlaylistRepository playlistRepository;
     SongRepository songRepository;
-    Cloudinary cloudinary;
+    CloudinaryService cloudinaryService;
     PlaylistSongRepository playlistSongRepository;
 
     @CacheEvict(value = {"playlist_detail", "playlist_songs", "user_playlists", "my_playlists"}, allEntries = true)
@@ -52,9 +53,10 @@ public class PlaylistService {
         Playlist playlist = playlistMapper.toPlaylist(request);
 
         if (request.getCoverUrl() != null && !request.getCoverUrl().isEmpty()){
-            String coverPath = saveFileCloud(request.getCoverUrl(), "spotify/playlists");
-            playlist.setCoverUrl(coverPath);
+            CloudinaryResponse cloudRes = cloudinaryService.uploadFile(request.getCoverUrl(), "spotify/playlists");
+            if (cloudRes != null) playlist.setCoverUrl(cloudRes.getUrl());
         }
+
         if (playlist.getIsPublic() == null) playlist.setIsPublic(true); //không gửi param mặc định là true
         playlist.setUser(user);
         playlist.setPlaylistSongs(new HashSet<>());
@@ -72,10 +74,10 @@ public class PlaylistService {
 
         if (request.getCoverUrl() != null && !request.getCoverUrl().isEmpty()){
             if (playlist.getCoverUrl() != null){
-                deleteFileCloud(playlist.getCoverUrl(), "image");
+                cloudinaryService.deleteFile(playlist.getCoverUrl(), "image");
             }
-            String coverUrl = saveFileCloud(request.getCoverUrl(), "spotify/playlists");
-            playlist.setCoverUrl(coverUrl);
+            CloudinaryResponse cloudRes = cloudinaryService.uploadFile(request.getCoverUrl(), "spotify/playlists");
+            if (cloudRes != null) playlist.setCoverUrl(cloudRes.getUrl());
         }
 
         playlist = playlistRepository.save(playlist);
@@ -106,13 +108,13 @@ public class PlaylistService {
         }
 
         if (playlist.getCoverUrl() != null){
-            deleteFileCloud(playlist.getCoverUrl(), "image");
+            cloudinaryService.deleteFile(playlist.getCoverUrl(), "image");
         }
 
         playlistRepository.delete(playlist);
     }
-
-    @Cacheable(value = "playlist_detail", key = "#playlistId")
+    // Dùng 'unless' để chặn việc lưu vào cache nếu playlist trả về không phải là public
+    @Cacheable(value = "playlist_detail", key = "#playlistId", unless = "!#result.isPublic")
     public PlaylistResponse getPlaylist(String playlistId){
         Playlist playlist = playlistRepository.findById(playlistId)
                 .orElseThrow(() -> new AppException(ErrorCode.PLAY_LIST_NOT_FOUND));
@@ -156,15 +158,6 @@ public class PlaylistService {
     @Transactional
     public void removeSongFromPlaylist(String playlistId, String songId){
         getPlayListAndCheckOwnership(playlistId);
-//        Song song = songRepository.findById(songId)
-//                .orElseThrow(() -> new AppException(ErrorCode.SONG_NOT_FOUND));
-//
-//        boolean removed = playlist.getSongs().remove(song);
-//        if (!removed){
-//            throw new AppException(ErrorCode.SONG_NOT_IN_PLAYLIST);
-//        }
-//
-//        playlistRepository.save(playlist);
 
         if (!playlistSongRepository.existsByPlaylistIdAndSongId(playlistId, songId)){
             throw new AppException(ErrorCode.SONG_NOT_IN_PLAYLIST);
@@ -220,7 +213,9 @@ public class PlaylistService {
         return playlist;
     }
 
-    @Cacheable(value = "user_playlists", key = "#targetUserId + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
+    /*Nếu Chủ sở hữu gọi API này trước, Redis sẽ lưu nguyên một list gồm cả Private + Public.
+    Lúc sau người ngoài ấn vào tường của Chủ sở hữu, Redis nhả thẳng cái list đó ra -> Lộ toàn bộ Playlist ẩn.*/
+//    @Cacheable(value = "user_playlists", key = "#targetUserId + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<PlaylistResponse> getUserPlaylists(String targetUserId, Pageable pageable){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User targetUser = userRepository.findById(targetUserId)
@@ -234,50 +229,6 @@ public class PlaylistService {
         } else {
             return playlistRepository.findByUser_IdAndIsPublicTrue(targetUserId, pageable)
                     .map(playlistMapper::toPlaylistResponse);
-        }
-    }
-
-    private String saveFileCloud(MultipartFile file, String folder){
-        if(file == null || file.isEmpty()) return null;
-        try {
-            Map uploadResult = cloudinary.uploader().upload(
-                    file.getBytes(),
-                    ObjectUtils.asMap(
-                            "folder", folder,
-                            "resource_type", "auto"
-                    )
-            );
-            return uploadResult.get("secure_url").toString();
-        } catch (Exception e){
-            throw new AppException(ErrorCode.FILE_UPLOAD_FAILED);
-        }
-    }
-
-    private String getPublicIdFromUrl(String url){
-        if (url == null || url.isEmpty()) return null;
-        try {
-            Pattern pattern = Pattern.compile("upload/(?:v\\d+/)?([^.]+)\\.[a-z0-9]+$");
-            Matcher matcher = pattern.matcher(url);
-            if (matcher.find()){
-                return matcher.group(1);
-            }
-            return null;
-        } catch (Exception e){
-            log.error("Error parsing Public ID from URL: {}", url);
-            return null;
-        }
-
-    }
-
-    private void deleteFileCloud(String url, String resourceType){
-        String publicId = getPublicIdFromUrl(url);
-        if (publicId != null){
-            try {
-                cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("resource_type", resourceType));
-                log.info("Deleted file on Cloudinary: {} (Type: {})", publicId, resourceType);
-            } catch (Exception e){
-                log.error("Failed to delete file on Cloudinary: {}", publicId);
-            }
         }
     }
 }

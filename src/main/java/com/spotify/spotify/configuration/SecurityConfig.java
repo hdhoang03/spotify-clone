@@ -100,9 +100,14 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource(){
         CorsConfiguration corsConfiguration = new CorsConfiguration();
-        corsConfiguration.setAllowedOrigins(List.of("*"));
-        corsConfiguration.setAllowedMethods(List.of("*"));
+        // Cấu hình cụ thể origin để bảo mật hơn thay vì dùng "*"
+        corsConfiguration.setAllowedOrigins(List.of(
+                "http://localhost:5173", 
+                "https://spotify-clone-fe-chi.vercel.app"
+        ));
+        corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         corsConfiguration.setAllowedHeaders(List.of("*"));
+        // corsConfiguration.setAllowCredentials(true); // Uncomment nếu bạn dùng cookie/session
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", corsConfiguration);

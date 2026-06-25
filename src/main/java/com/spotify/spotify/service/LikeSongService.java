@@ -21,11 +21,13 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -36,13 +38,34 @@ public class LikeSongService {
     LikeSongMapper likeSongMapper;
     UserRepository userRepository;
     SongRepository songRepository;
+    RedisTemplate<String, Object> redisTemplate;
 
     public Boolean hasLiked(String songId){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        String cacheKey = "like_check:" + username + ":" + songId;
+        Boolean cachedResult = null;
+        try {
+            cachedResult = (Boolean) redisTemplate.opsForValue().get(cacheKey);
+        } catch (Exception e) {
+            log.error("Failed to query Redis for like check", e);
+        }
+
+        if (cachedResult != null) {
+            return cachedResult;
+        }
+
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        return likeSongRepository.existsByUser_IdAndSong_Id(user.getId(), songId);
+        boolean hasLiked = likeSongRepository.existsByUser_IdAndSong_Id(user.getId(), songId);
+
+        try {
+            redisTemplate.opsForValue().set(cacheKey, hasLiked, 1, TimeUnit.HOURS);
+        } catch (Exception e) {
+            log.error("Failed to write to Redis for like check", e);
+        }
+
+        return hasLiked;
     }
 
     public Long countSongLikes(String songId){
@@ -70,16 +93,27 @@ public class LikeSongService {
             throw new AppException(ErrorCode.SONG_NOT_FOUND);
         }
 
+        boolean result;
         if (likeSongRepository.existsByUser_IdAndSong_Id(user.getId(), songId)){
             likeSongRepository.deleteByUser_IdAndSong_Id(user.getId(), songId);
             songRepository.decrementLikeCount(songId);
-            return false; //trả về false -> unlike
+            result = false; //trả về false -> unlike
         } else {
             Song song = songRepository.getReferenceById(songId);
             likeSongRepository.save(new LikeSong(user, song));
             songRepository.incrementLikeCount(songId);
-            return true; //trả về true -> like
+            result = true; //trả về true -> like
         }
+
+        // Cập nhật/Xóa cache trong Redis
+        String cacheKey = "like_check:" + username + ":" + songId;
+        try {
+            redisTemplate.opsForValue().set(cacheKey, result, 1, TimeUnit.HOURS);
+        } catch (Exception e) {
+            log.error("Failed to update Redis like check cache", e);
+        }
+
+        return result;
     }
 
     @Cacheable(value = "top_liked_songs", key = "#pageable.pageNumber + '_' + #pageable.pageSize")

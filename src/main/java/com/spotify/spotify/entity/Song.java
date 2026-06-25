@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -82,6 +83,7 @@ public class Song {
     }
 
     //Thêm mới: Danh sách nghệ sĩ kết hợp ngày 6/1/2026
+    @BatchSize(size = 20)
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "song_performers",
@@ -89,18 +91,4 @@ public class Song {
         inverseJoinColumns = @JoinColumn(name = "artist_id")
     )
     Set<Artist> featuredArtists = new HashSet<>();
-
-    //Để remove song hoạt động
-//    @Override
-//    public boolean equals(Object o){
-//        if (this ==  o) return true;
-//        if (!(o instanceof Song)) return false;
-//        Song song = (Song) o;
-//        return id != null && id.equals(song.id);
-//    }
-//
-//    @Override
-//    public int hashCode(){
-//        return getClass().hashCode();
-//    }
 }

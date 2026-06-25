@@ -5,6 +5,7 @@ import com.cloudinary.utils.ObjectUtils;
 import com.spotify.spotify.dto.request.ArtistRequest;
 import com.spotify.spotify.dto.response.AlbumResponse;
 import com.spotify.spotify.dto.response.ArtistResponse;
+import com.spotify.spotify.dto.response.CloudinaryResponse;
 import com.spotify.spotify.entity.Album;
 import com.spotify.spotify.entity.Artist;
 import com.spotify.spotify.entity.Song;
@@ -50,10 +51,10 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ArtistService {
     ArtistFollowRepository artistFollowRepository;
+    CloudinaryService cloudinaryService;
     ArtistRepository artistRepository;
     UserRepository userRepository;
     ArtistMapper artistMapper;
-    Cloudinary cloudinary;
 
     @CacheEvict(value = {"artists_page", "artist_detail", "albums_by_artist"}, allEntries = true)
     @Transactional
@@ -66,9 +67,10 @@ public class ArtistService {
         Artist artist = artistMapper.toArtist(request);
 
         if (request.getAvatarUrl() != null && !request.getAvatarUrl().isEmpty()) {
-            String avatarPath = saveFileCloud(request.getAvatarUrl(), "spotify/artists");//Up ảnh lên cloud "spotify/artists"
-            artist.setAvatarUrl(avatarPath);
+            CloudinaryResponse cloudRes = cloudinaryService.uploadFile(request.getAvatarUrl(), "spotify/artists");
+            if (cloudRes != null) artist.setAvatarUrl(cloudRes.getUrl());
         }
+
         artist = artistRepository.save(artist);
         return artistMapper.toArtistResponse(artist);
     }
@@ -126,11 +128,13 @@ public class ArtistService {
 
         if (request.getAvatarUrl() != null && !request.getAvatarUrl().isEmpty()){
             if (artist.getAvatarUrl() != null){ //Xóa ảnh cũ
-                deleteFileCloud(artist.getAvatarUrl(), "image");
+                cloudinaryService.deleteFile(artist.getAvatarUrl(), "image");
             }
-            String avatarPath = saveFileCloud(request.getAvatarUrl(), "spotify/artists");
-            artist.setAvatarUrl(avatarPath);
+
+            CloudinaryResponse cloudRes = cloudinaryService.uploadFile(request.getAvatarUrl(), "spotify/artists");
+            if (cloudRes != null) artist.setAvatarUrl(cloudRes.getUrl());
         }
+
         artist = artistRepository.save(artist);
         return artistMapper.toArtistResponse(artist);
     }
@@ -204,49 +208,5 @@ public class ArtistService {
             response.setIsFollowed(followedArtistIds.contains(projection.getArtist().getId()));
             return response;
         });
-    }
-
-    private String saveFileCloud(MultipartFile file, String folder){
-        if(file == null || file.isEmpty()) return null;
-        try {
-            Map uploadResult = cloudinary.uploader().upload(
-                    file.getBytes(),
-                    ObjectUtils.asMap(
-                            "folder", folder,
-                            "resource_type", "auto"
-                    )
-            );
-            return uploadResult.get("secure_url").toString();
-        } catch (Exception e){
-            throw new AppException(ErrorCode.FILE_UPLOAD_FAILED);
-        }
-    }
-
-    private String getPublicIdFromUrl(String url){
-        if (url == null || url.isEmpty()) return null;
-        try {
-            Pattern pattern = Pattern.compile("upload/(?:v\\d+/)?([^.]+)\\.[a-z0-9]+$");
-            Matcher matcher = pattern.matcher(url);
-            if (matcher.find()){
-                return matcher.group(1);
-            }
-            return null;
-        } catch (Exception e){
-            log.error("Error parsing Public ID from URL: {}", url);
-            return null;
-        }
-
-    }
-
-    private void deleteFileCloud(String url, String resourceType){
-        String publicId = getPublicIdFromUrl(url);
-        if (publicId != null){
-            try {
-                cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("resource_type", resourceType));
-                log.info("Deleted file on Cloudinary: {} (Type: {})", publicId, resourceType);
-            } catch (Exception e){
-                log.error("Failed to delete file on Cloudinary: {}", publicId);
-            }
-        }
     }
 }

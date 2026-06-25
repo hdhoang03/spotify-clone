@@ -55,6 +55,7 @@ public class UserService {
     EmailService emailService;
     UserBlockRepository userBlockRepository;
     RabbitMQProducerService rabbitMQProducerService;
+    CloudinaryService cloudinaryService;
 //    KafkaProducerService kafkaProducerService;
 //    CaptchaService captchaService;
 
@@ -104,6 +105,7 @@ public class UserService {
             log.info("Admin account disabled instead of deleted.");
             return;
         }
+
         user.getRoles().clear();
         userRepository.save(user);
         userRepository.deleteById(userId);
@@ -145,6 +147,7 @@ public class UserService {
     }
 
     @Transactional
+    @CacheEvict(value = "user_profile", allEntries = true)
     public Boolean togglePrivacy(){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
@@ -261,6 +264,7 @@ public class UserService {
 //    }
 
     @Transactional
+    @CacheEvict(value = "user_profile", allEntries = true)
     public boolean toggleFollowUser(String targetUserId){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User currentUser = userRepository.findByUsername(username)
@@ -319,6 +323,7 @@ public class UserService {
     }
 
     @Transactional
+    @CacheEvict(value = "user_profile", allEntries = true)
     public boolean toggleBlockUser(String targetUserId){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User currentUser = userRepository.findByUsername(username)
@@ -475,17 +480,19 @@ public class UserService {
 
         if (Boolean.TRUE.equals(request.getIsRemoved())) {
             if (user.getAvatarUrl() != null){
-                deleteFileCloud(user.getAvatarUrl(), "image");
+                cloudinaryService.deleteFile(user.getAvatarUrl(), "image");
             }
             user.setAvatarUrl(null);
         }
+
         else if (request.getAvatar() != null && !request.getAvatar().isEmpty()){
             if (user.getAvatarUrl() != null){
-                deleteFileCloud(user.getAvatarUrl(), "image");
+                cloudinaryService.deleteFile(user.getAvatarUrl(), "image");
             }
-            CloudinaryResponse cloudRes = saveFileCloud(request.getAvatar(), "spotify_avatars");
-            user.setAvatarUrl(cloudRes.getUrl());
+            CloudinaryResponse cloudRes = cloudinaryService.uploadFile(request.getAvatar(), "spotify_avatars");
+            if (cloudRes != null) user.setAvatarUrl(cloudRes.getUrl());
         }
+
         userRepository.save(user);
         return getUserProfile("me");
     }

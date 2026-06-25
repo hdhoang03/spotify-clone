@@ -50,19 +50,37 @@ public interface SongRepository extends JpaRepository<Song, String>, JpaSpecific
     @Query("SELECT s FROM Song s WHERE s.deleted = false AND s.artist.deleted = false")
     Page<Song> findAllActiveSongs(Pageable pageable);
 
+//    @Query("""
+//            SELECT s FROM Song s
+//            LEFT JOIN FETCH s.album
+//            LEFT JOIN FETCH s.artist a
+//            LEFT JOIN FETCH s.category
+//            WHERE s.deleted = false
+//            AND (LOWER(s.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
+//            OR (a.id IS NOT NULL AND LOWER(a.name) LIKE LOWER(CONCAT('%', :keyword, '%'))))
+//    """)
+//    List<Song> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
+    //Pha 1 Chỉ đi tìm ID của 5 bài hát khớp với từ khóa
     @Query("""
-            SELECT s FROM Song s
-            LEFT JOIN FETCH s.album
-            LEFT JOIN FETCH s.artist a
-            LEFT JOIN FETCH s.category
-            LEFT JOIN FETCH s.featuredArtists
-            WHERE s.deleted = false
-            AND (LOWER(s.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR
-                (a.id IS NOT NULL AND LOWER(a.name) LIKE LOWER(CONCAT('%', :keyword, '%')))
-            )
+        SELECT s.id FROM Song s
+        LEFT JOIN s.artist a
+        WHERE s.deleted = false
+        AND (LOWER(s.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                OR (a.id IS NOT NULL AND LOWER(a.name) LIKE LOWER(CONCAT('%', :keyword, '%'))))
     """)
-    List<Song> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+    List<String> findSongIdsByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
+    //Pha 2 Từ 5 cái ID ở trên, ta kéo FETCH toàn bộ dữ liệu con lên
+    @Query("""
+        SELECT DISTINCT s FROM Song s
+        LEFT JOIN FETCH s.album
+        LEFT JOIN FETCH s.artist
+        LEFT JOIN FETCH s.category
+        LEFT JOIN FETCH s.featuredArtists
+        WHERE s.id IN :ids
+    """)
+    List<Song> findSongsWithDetailsByIds(@Param("ids") List<String> ids);
 
     @Modifying
     @Query("""

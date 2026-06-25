@@ -1,0 +1,101 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /spotify
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+  datasource:
+    url: ${DB_URL:jdbc:mysql://springtunes-db-springtunes-mysql.h.aivencloud.com:12613/spotify?ssl-mode=REQUIRED}
+    driverClassName: "com.mysql.cj.jdbc.Driver"
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+#  datasource:
+#    url: jdbc:mysql://localhost:3306/spotify
+#    driverClassName: "com.mysql.cj.jdbc.Driver"
+#    username: root
+#    password: root
+
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${SMTP_USERNAME:hodanghoang2003@gmail.com}
+    password: ${SMTP_PASSWORD:svclbhpapszfodqr}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+  data:
+    redis:
+      host: ${REDIS_HOST:vast-quetzal-69067.upstash.io}
+      password: ${REDIS_PASSWORD:gQAAAAAAAQ3LAAIgcDI4YjNhOWEyZTA4YzA0OTFhOTQ5OGQ3NGVhYmMwODI0Mw}
+      port: 6379
+      timeout: 5000ms
+      ssl:
+        enabled: true
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+  kafka:
+    bootstrap-servers: ${KAFKA_HOST:kafka-server}:9092
+    consumer:
+      group-id: springtunes-group
+      auto-offset-reset: earliest
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:armadillo.rmq.cloudamqp.com}
+    port: ${RABBITMQ_PORT:5671}
+    username: ${RABBITMQ_USERNAME:wjfvhtck}
+    password: ${RABBITMQ_PASSWORD:pOEkCjNp-deqIlhub-wKwflZ3ZNOoCE4}
+    virtual-host: ${RABBITMQ_VIRTUAL_HOST:wjfvhtck}
+    ssl:
+      enabled: true
+
+  lifecycle:
+    timeout-per-shutdown-phase: 10
+
+jwt:
+  signerKey: ${JWT_SECRET_KEY:b2yoP+BXkNpTkT3UA7TSAHxqoLxuzgZIRmscynx2zbm5PHbtt3U+JB5N1G6AIrNg}
+  valid-duration: 3600
+  refreshable-duration: 7200
+
+cloudinary:
+  cloud-name: "dfsoeiui1"
+  api-key: ${KEY_CLOUD}
+  api-secret: ${SECRET_CLOUD}
+
+payos:
+  client-id: ${PAYOS_CLIENT_ID}
+  api-key: ${PAYOS_API_KEY}
+  checksum-key: ${PAYOS_CHECKSUM_KEY}
+
+outbound:
+  identity:
+    client-id: ${GOOGLE_OAUTH_CLIENT_ID}
+    client-secret: ${GOOGLE_OAUTH_CLIENT_SECRET}
+    redirect-uri: ${FRONTEND_PROD_URL:http://localhost:5173/oauth2/callback}
+
+google:
+  recaptcha:
+    secret: ${RECAPTCHA_SECRET_KEY}

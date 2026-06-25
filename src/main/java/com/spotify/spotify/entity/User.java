@@ -36,7 +36,7 @@ public class User {
 
     Boolean enabled;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.LAZY)
     Set<Role> roles;
 
     @ManyToMany
@@ -79,7 +79,7 @@ public class User {
 
     @Builder.Default
     @Column(name = "is_premium")
-    Boolean isPremium = true;
+    Boolean isPremium = false;
 
     @Column(name = "preferred_language")
     @Builder.Default

@@ -42,7 +42,11 @@ public class CaptchaService {
             if (recaptchaResponse != null && recaptchaResponse.isSuccess() && recaptchaResponse.getScore() >= 0.5) {
                 return true;
             } else {
-                log.warn("Phát hiện Bot spam! Điểm Captcha: {}", recaptchaResponse != null ? recaptchaResponse.getScore() : "NULL");
+                if (recaptchaResponse != null) {
+                    log.warn("Phát hiện Bot spam hoặc Captcha không hợp lệ! Điểm: {}, Lỗi từ Google: {}", recaptchaResponse.getScore(), recaptchaResponse.getErrorCodes());
+                } else {
+                    log.warn("Phát hiện Bot spam! Không nhận được response từ Google.");
+                }
                 return false;
             }
         } catch (Exception e) {

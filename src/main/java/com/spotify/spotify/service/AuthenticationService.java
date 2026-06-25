@@ -106,16 +106,18 @@ public class AuthenticationService {
 //        emailBloomFilter.tryInit(1000000L, 0.01);
 //    }
 
-    public AuthenticationResponse outboundAuthenticate(String code){
+    public AuthenticationResponse outboundAuthenticate(String code, String redirectUriParam){
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
         String randomPassword = UUID.randomUUID().toString();
+        
+        String finalRedirectUri = (redirectUriParam != null && !redirectUriParam.isEmpty()) ? redirectUriParam : REDIRECT_URI;
 
         var response = outboundIdentityClient.exchangeToken(ExchangeTokenRequest.builder()
                 .grantType(GRANT_TYPE)
                 .code(code)
                 .clientId(CLIENT_ID)
                 .clientSecret(CLIENT_SECRET)
-                .redirectUri(REDIRECT_URI)
+                .redirectUri(finalRedirectUri)
                 .build());
         log.info("TOKEN RESPONSE: {}", response);
 
@@ -143,6 +145,10 @@ public class AuthenticationService {
 //                    emailBloomFilter.add(savedUser.getEmail());
                     return savedUser;
                 });
+
+        if (!user.getEnabled()){
+            throw new AppException(ErrorCode.ACCOUNT_DISABLED);
+        }
 
         var token = generateToken(user);
 
@@ -343,8 +349,58 @@ public class AuthenticationService {
         if (!verified && expiryTime.after(new Date()))
             throw new AppException(ErrorCode.UNAUTHENTICATED);
 
-        if (invalidTokenRepository.existsById(signedJWT.getJWTClaimsSet().getJWTID()))
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        //Kiểm tra blacklist token trong redis
+        String jit = signedJWT.getJWTClaimsSet().getJWTID();
+        String cacheKey = "token_blacklist:" + jit;
+        Boolean isBlacklisted = null;
+        try {
+            isBlacklisted = (Boolean) redisTemplate.opsForValue().get(cacheKey);
+        } catch (Exception e) {
+            log.error("Failed to query redis for token blacklist check", e);
+        }
+
+        if (isBlacklisted == null){
+            boolean exists = invalidTokenRepository.existsById(jit);
+            isBlacklisted = exists;
+            try {
+                long ttl = expiryTime.getTime() - System.currentTimeMillis();
+                if (ttl > 0) {
+                    redisTemplate.opsForValue().set(cacheKey, exists, ttl, TimeUnit.MILLISECONDS);
+                }
+            } catch (Exception e) {
+                log.error("Failed to write redis for token blacklist check", e);
+            }
+
+            if (isBlacklisted){
+                throw new AppException(ErrorCode.UNAUTHENTICATED);
+            }
+        }
+
+//        String jit = signedJWT.getJWTClaimsSet().getJWTID();
+//        String cacheKey = "token_blacklist:" + jit;
+//        Boolean isBlacklisted = null;
+//        try {
+//            isBlacklisted = (Boolean) redisTemplate.opsForValue().get(cacheKey);
+//        } catch (Exception e) {
+//            log.error("Failed to query Redis for token blacklist check", e);
+//        }
+//
+//        if (isBlacklisted == null) {
+//            boolean exists = invalidTokenRepository.existsById(jit);
+//            isBlacklisted = exists;
+//            try {
+//                long ttl = expiryTime.getTime() - System.currentTimeMillis();
+//                if (ttl > 0) {
+//                    redisTemplate.opsForValue().set(cacheKey, exists, ttl, TimeUnit.MILLISECONDS);
+//                }
+//            } catch (Exception e) {
+//                log.error("Failed to write to Redis for token blacklist check", e);
+//            }
+//        }
+//
+//        if (isBlacklisted) {
+//            throw new AppException(ErrorCode.UNAUTHENTICATED);
+//        }
 
         return signedJWT;
     }
@@ -420,6 +476,17 @@ public class AuthenticationService {
                     .id(jit)
                     .build();
             invalidTokenRepository.save(invalidatedToken);
+
+            // Cập nhật Cache ngay lập tức
+            String cacheKey = "token_blacklist:" + jit;
+            try {
+                long ttl = expiredToken.getTime() - System.currentTimeMillis();
+                if (ttl > 0) {
+                    redisTemplate.opsForValue().set(cacheKey, true, ttl, TimeUnit.MILLISECONDS);
+                }
+            } catch (Exception e) {
+                log.error("Failed to write logout token to Redis", e);
+            }
         } catch (AppException e){
             log.info("Token already expired.");
         } catch (DataIntegrityViolationException e){ //Bắt lỗi đồng thời khi 2 luông lưu 1 token
@@ -440,6 +507,16 @@ public class AuthenticationService {
 
         try {
             invalidTokenRepository.save(invalidatedToken);
+            // Cập nhật Cache ngay lập tức
+            String cacheKey = "token_blacklist:" + jit;
+            try {
+                long ttl = expiryTime.getTime() - System.currentTimeMillis();
+                if (ttl > 0) {
+                    redisTemplate.opsForValue().set(cacheKey, true, ttl, TimeUnit.MILLISECONDS);
+                }
+            } catch (Exception e) {
+                log.error("Failed to write refreshed token to Redis", e);
+            }
         } catch (DataIntegrityViolationException e){
             throw new AppException(ErrorCode.UNAUTHENTICATED); //duplicated do gọi đồng thời thì chặn luôn
         }

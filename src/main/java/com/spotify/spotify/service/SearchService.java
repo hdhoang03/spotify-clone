@@ -15,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @RequiredArgsConstructor
@@ -52,10 +53,21 @@ public class SearchService {
                         .stream().map(artistMapper::toArtistResponse).toList()
         );
 
-        var songs = CompletableFuture.supplyAsync(() ->
-                songRepository.searchByKeyword(keyword, limit)
-                        .stream().map(songMapper::toSongSearchResponse).toList()
-        );
+        var songs = CompletableFuture.supplyAsync(() -> {
+            // Pha 1: Lấy danh sách ID
+            List<String> songIds = songRepository.findSongIdsByKeyword(keyword, limit);
+
+            // Nếu không tìm thấy bài nào thì trả về list rỗng luôn, đỡ tốn công gọi Pha 2
+            if (songIds.isEmpty()) {
+                return java.util.Collections.<com.spotify.spotify.dto.response.SearchSongResponse>emptyList();
+            }
+
+            // Pha 2: Lấy full chi tiết và Map ra Response
+            return songRepository.findSongsWithDetailsByIds(songIds)
+                    .stream()
+                    .map(songMapper::toSongSearchResponse)
+                    .toList();
+        });
 
         var albums = CompletableFuture.supplyAsync(() ->
                 albumRepository.searchByKeyword(keyword, limit)

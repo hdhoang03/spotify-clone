@@ -21,8 +21,8 @@ public class AuthenticationController {
     AuthenticationService authenticationService;
 
     @PostMapping("/outbound/authentication")
-    ApiResponse<AuthenticationResponse> outboundAuthentication(@RequestParam("code") String code){
-        var result = authenticationService.outboundAuthenticate(code);
+    ApiResponse<AuthenticationResponse> outboundAuthentication(@RequestParam("code") String code, @RequestParam(value = "redirectUri", required = false) String redirectUri){
+        var result = authenticationService.outboundAuthenticate(code, redirectUri);
         return ApiResponse.<AuthenticationResponse>builder()
                 .code(1000)
                 .result(result)

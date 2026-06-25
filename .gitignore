@@ -42,3 +42,6 @@ target/
 
 # Bỏ qua thư mục chứa file upload ở local
 uploads/
+
+.env
+.env.prod

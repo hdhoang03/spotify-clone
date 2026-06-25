@@ -3,6 +3,7 @@ package com.spotify.spotify.exception;
 import com.spotify.spotify.dto.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -17,6 +18,7 @@ public class GlobalExceptionHandler {
         log.error("Unhandled exception: ", exception);
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(ApiResponse.<Void>builder()
                         .code(ErrorCode.UNCATEGORIZED_EXCEPTION.getCode())
                         .message(ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage())
@@ -28,6 +30,7 @@ public class GlobalExceptionHandler {
         ErrorCode errorCode = exception.getErrorCode();
         log.warn("App exception: {}", errorCode.getMessage());
         return ResponseEntity.status(errorCode.getStatusCode())
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(ApiResponse.<Void>builder()
                         .code(errorCode.getCode())
                         .message(errorCode.getMessage())
@@ -40,6 +43,7 @@ public class GlobalExceptionHandler {
         log.warn("Access Denied: {}", exception.getMessage());
 
         return ResponseEntity.status(errorCode.getStatusCode())
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(ApiResponse.<Void>builder()
                         .code(errorCode.getCode())
                         .message(errorCode.getMessage())

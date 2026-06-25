@@ -35,7 +35,7 @@ public class ArtistFollowService {
     UserRepository userRepository;
     ArtistMapper artistMapper;
 
-    @CacheEvict(value = "my_followed_artists", allEntries = true)
+    @CacheEvict(value = {"my_followed_artists", "user_followed_artists"}, allEntries = true)
     @Transactional //phải có để Modifying chạy
     public boolean toggleFollow(String artistId){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -77,6 +77,7 @@ public class ArtistFollowService {
         return follows.map(artistMapper::toArtistResponse);
     }
 
+    @Cacheable(value = "user_followed_artists", key = "#userId + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<ArtistFollowResponse> getFollowedArtists(String userId, Pageable pageable){
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
