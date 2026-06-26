@@ -13,6 +13,8 @@ import com.spotify.spotify.repository.NotificationRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -68,11 +70,13 @@ public class NotificationService {
                         .build());
     }
 
+    @Cacheable(value = "unread_notification_count", key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public long getUnreadCount(){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         return notificationRepository.countByRecipient_UsernameAndIsReadFalse(username);
     }
 
+    @CacheEvict(value = "unread_notification_count", key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     @Transactional
     public boolean toggleReadStatus(String id){
         Notification notification = notificationRepository.findById(id)
@@ -85,6 +89,7 @@ public class NotificationService {
         return newStatus;
     }
 
+    @CacheEvict(value = "unread_notification_count", key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     @Transactional
     public void markAllAsRead(){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();

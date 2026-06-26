@@ -2,6 +2,7 @@ package com.spotify.spotify.controller;
 
 import com.spotify.spotify.dto.ApiResponse;
 import com.spotify.spotify.dto.response.DashboardDataResponse;
+import com.spotify.spotify.dto.response.DashboardOverviewResponse;
 import com.spotify.spotify.service.AnalyticsService;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -21,6 +22,15 @@ import java.time.LocalDate;
 public class AnalyticsController {
     AnalyticsService analyticsService;
 
+    @GetMapping("/overview")
+    ApiResponse<DashboardOverviewResponse> getDashboardOverview() {
+        return ApiResponse.<DashboardOverviewResponse>builder()
+                .code(1000)
+                .message("Dashboard overview fetched successfully")
+                .result(analyticsService.getDashboardOverview())
+                .build();
+    }
+
     @GetMapping("/dashboard")
     ApiResponse<DashboardDataResponse> getDashboardData(@RequestParam(defaultValue = "week") String timeRange,
                                                         @RequestParam(required = false) Integer year,
@@ -35,3 +45,4 @@ public class AnalyticsController {
                 .build();
     }
 }
+

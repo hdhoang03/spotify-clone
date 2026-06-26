@@ -4,10 +4,7 @@ import com.spotify.spotify.dto.response.GenreStatResponse;
 import com.spotify.spotify.entity.Song;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -29,37 +26,20 @@ public interface SongRepository extends JpaRepository<Song, String>, JpaSpecific
     @Query("UPDATE Song s SET s.streamCount = COALESCE(s.streamCount, 0) + 1 WHERE s.id = :id")
     void incrementStreamCount(@Param("id") String id);
 
-    List<Song> findByArtist_Id(String artistId);
-
-//    @Query("""
-//        SELECT DISTINCT s FROM Song s
-//        LEFT JOIN s.featuredArtists fa
-//        WHERE s.deleted = false
-//        AND (s.artist.id = :artistId OR fa.id = :artistId)
-//        ORDER BY s.streamCount DESC
-//    """)
-//    List<Song> findSongsByArtistOrFeatured(@Param("artistId") String artistId);
-
+    // Dùng EntityGraph để fetch các quan hệ ManyToOne ngay lập tứ
+    @EntityGraph(attributePaths = {"artist", "album", "category"})
     @Query("SELECT s FROM Song s WHERE s.deleted = false AND s.artist.deleted = false AND LOWER(s.title) LIKE LOWER(CONCAT('%', :keyword, '%'))")
     Page<Song> searchActiveSongByTitle(String keyword, Pageable pageable);
 
+    @EntityGraph(attributePaths = {"artist", "album", "category"})
     Page<Song> findByAlbum_Id(String albumId, Pageable pageable);
 
+    @EntityGraph(attributePaths = {"artist", "album", "category"})
     Page<Song> findByCategory_Id(String categoryId, Pageable pageable);
 
+    @EntityGraph(attributePaths = {"artist", "album", "category"})
     @Query("SELECT s FROM Song s WHERE s.deleted = false AND s.artist.deleted = false")
     Page<Song> findAllActiveSongs(Pageable pageable);
-
-//    @Query("""
-//            SELECT s FROM Song s
-//            LEFT JOIN FETCH s.album
-//            LEFT JOIN FETCH s.artist a
-//            LEFT JOIN FETCH s.category
-//            WHERE s.deleted = false
-//            AND (LOWER(s.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
-//            OR (a.id IS NOT NULL AND LOWER(a.name) LIKE LOWER(CONCAT('%', :keyword, '%'))))
-//    """)
-//    List<Song> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
     //Pha 1 Chỉ đi tìm ID của 5 bài hát khớp với từ khóa
     @Query("""
@@ -119,4 +99,6 @@ public interface SongRepository extends JpaRepository<Song, String>, JpaSpecific
     List<Song> findTopPopularSongsByArtist(@Param("artistId") String artistId);
 
     long countByAlbum_IdAndDeletedFalse(String albumId);
+
+    long countByDeletedFalse();
 }

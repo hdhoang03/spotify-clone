@@ -1,10 +1,9 @@
 package com.spotify.spotify.service;
 
-import com.cloudinary.Cloudinary;
-import com.cloudinary.utils.ObjectUtils;
 import com.spotify.spotify.dto.request.PlaylistRequest;
 import com.spotify.spotify.dto.request.PlaylistUpdateRequest;
 import com.spotify.spotify.dto.response.CloudinaryResponse;
+import com.spotify.spotify.dto.response.CustomPageImpl;
 import com.spotify.spotify.dto.response.PlaylistResponse;
 import com.spotify.spotify.dto.response.PlaylistSongResponse;
 import com.spotify.spotify.entity.Playlist;
@@ -26,12 +25,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.time.LocalDateTime;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Slf4j
 @Service
@@ -169,7 +163,7 @@ public class PlaylistService {
     @Cacheable(value = "playlist_songs", key = "#playlistId + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<PlaylistSongResponse> getPlaylistSongs(String playlistId, Pageable pageable){
         Page<PlaylistSong> playlistSongs = playlistSongRepository.findByPlaylistIdOrderByAddedAtDesc(playlistId, pageable);
-        return playlistSongs.map(ps -> {
+        Page<PlaylistSongResponse> mappedPage = playlistSongs.map(ps -> {
             Song s = ps.getSong();
 
             return PlaylistSongResponse.builder()
@@ -184,6 +178,7 @@ public class PlaylistService {
                     .addedAt(ps.getAddedAt())
                     .build();
         });
+        return new CustomPageImpl<>(mappedPage.getContent(), pageable, mappedPage.getTotalElements());
     }
 
     @Cacheable(value = "user_playlists", key = "#userId + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
@@ -191,7 +186,8 @@ public class PlaylistService {
         if (!userRepository.existsById(userId)){
             throw new AppException(ErrorCode.USER_NOT_EXISTED);
         }
-        return playlistRepository.findPublicPlaylistsWithCount(userId, pageable);
+        Page<PlaylistResponse> page = playlistRepository.findPublicPlaylistsWithCount(userId, pageable);
+        return new CustomPageImpl<>(page.getContent(), pageable, page.getTotalElements());
     }
 
     @Cacheable(value = "my_playlists", key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName() + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
@@ -200,7 +196,8 @@ public class PlaylistService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        return playlistRepository.findMyPlaylistsWithCount(user.getId(), pageable);
+        Page<PlaylistResponse> page = playlistRepository.findMyPlaylistsWithCount(user.getId(), pageable);
+        return new CustomPageImpl<>(page.getContent(), pageable, page.getTotalElements());
     }
 
     private Playlist getPlayListAndCheckOwnership(String playlistId){

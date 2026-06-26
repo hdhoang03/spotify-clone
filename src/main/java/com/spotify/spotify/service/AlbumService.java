@@ -5,6 +5,7 @@ import com.cloudinary.utils.ObjectUtils;
 import com.spotify.spotify.dto.request.AlbumRequest;
 import com.spotify.spotify.dto.response.AlbumResponse;
 import com.spotify.spotify.dto.response.CloudinaryResponse;
+import com.spotify.spotify.dto.response.CustomPageImpl;
 import com.spotify.spotify.dto.response.SongResponse;
 import com.spotify.spotify.entity.Album;
 import com.spotify.spotify.entity.Artist;
@@ -59,7 +60,7 @@ public class AlbumService {
     * giúp tối ưu RAM hơn
     * */
 
-    @CacheEvict(value = {"albums_page", "album_detail", "albums_by_artist"}, allEntries = true)
+    @CacheEvict(value = {"albums_page", "admin_albums_page", "album_detail", "albums_by_artist"}, allEntries = true)
     @PreAuthorize("hasRole('ADMIN')")
     public AlbumResponse createAlbum(AlbumRequest request){
         if(albumRepository.existsByNameAndArtists_Id(request.getName(), request.getArtistId())){
@@ -80,7 +81,7 @@ public class AlbumService {
         return albumMapper.toAlbumResponse(album);
     }
 
-    @CacheEvict(value = {"albums_page", "album_detail", "albums_by_artist"}, allEntries = true)
+    @CacheEvict(value = {"albums_page", "album_detail", "albums_by_artist", "songs_by_album"}, allEntries = true)
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public void addSongsToAlbum(String albumId, List<String> songIds){
@@ -116,7 +117,7 @@ public class AlbumService {
         songRepository.saveAll(songs);
     }
 
-    @CacheEvict(value = {"albums_page", "album_detail", "albums_by_artist"}, allEntries = true)
+    @CacheEvict(value = {"albums_page", "admin_albums_page", "album_detail", "albums_by_artist"}, allEntries = true)
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public void removeSongFromAlbum(String albumId, String songId){
@@ -140,8 +141,9 @@ public class AlbumService {
             throw new AppException(ErrorCode.ALBUM_NOT_FOUND);
         }
 
-        return songRepository.findByAlbum_Id(albumId, pageable)
+        Page<SongResponse> page = songRepository.findByAlbum_Id(albumId, pageable)
                 .map(songMapper::toSongResponse);
+        return new CustomPageImpl<>(page.getContent(), pageable, page.getTotalElements());
     }
 
     @Cacheable(value = "albums_by_artist", key = "#artistId")
@@ -163,7 +165,7 @@ public class AlbumService {
 //        return albumRepository.findAll(pageable)
 //                .map(albumMapper::toAlbumSummary);//chỉ lấy album không lấy các bài hát đi kèm
         Page<AlbumRepository.AlbumWithSongCount> projections = albumRepository.searchAlbumsWithCount(null, false, pageable);
-        return projections.map(projection -> {
+        Page<AlbumResponse> mappedPage = projections.map(projection -> {
             Album album = projection.getAlbum();
             AlbumResponse response = albumMapper.toAlbumResponse(album);
 
@@ -176,6 +178,7 @@ public class AlbumService {
             }
             return response;
         });
+        return new CustomPageImpl<>(mappedPage.getContent(), pageable, mappedPage.getTotalElements());
     }
 
     @Cacheable(value = "album_detail", key = "#id")
@@ -200,7 +203,7 @@ public class AlbumService {
         return response;
     }
 
-    @CacheEvict(value = {"albums_page", "album_detail", "albums_by_artist"}, allEntries = true)
+    @CacheEvict(value = {"albums_page", "admin_albums_page", "album_detail", "albums_by_artist"}, allEntries = true)
     @PreAuthorize("hasRole('ADMIN')")
     public AlbumResponse updateAlbum(String id, AlbumRequest request){
         Album album = albumRepository.findById(id)
@@ -229,7 +232,7 @@ public class AlbumService {
         return albumMapper.toAlbumResponse(album);
     }
 
-    @CacheEvict(value = {"albums_page", "album_detail", "albums_by_artist"}, allEntries = true)
+    @CacheEvict(value = {"albums_page", "admin_albums_page", "album_detail", "albums_by_artist"}, allEntries = true)
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public void deleteAlbum(String id){
@@ -247,9 +250,10 @@ public class AlbumService {
         albumRepository.delete(album);
     }
 
+    @Cacheable(value = "admin_albums_page", key = "#keyword + '_' + #isDeleted + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<AlbumResponse> searchAlbum(String keyword, boolean isDeleted, Pageable pageable){
         Page<AlbumRepository.AlbumWithSongCount> projections = albumRepository.searchAlbumsWithCount(keyword, isDeleted, pageable);
-        return projections.map(projection -> {
+        Page<AlbumResponse> mappedPage = projections.map(projection -> {
             Album album = projection.getAlbum();
             AlbumResponse response = albumMapper.toAlbumResponse(album);
 
@@ -264,6 +268,7 @@ public class AlbumService {
 
             return response;
         });
+        return new CustomPageImpl<>(mappedPage.getContent(), pageable, mappedPage.getTotalElements());
     }
 
 //    private String saveFileCloud(MultipartFile file, String folder){

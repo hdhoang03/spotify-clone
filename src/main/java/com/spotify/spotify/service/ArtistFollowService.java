@@ -2,6 +2,7 @@ package com.spotify.spotify.service;
 
 import com.spotify.spotify.dto.response.ArtistFollowResponse;
 import com.spotify.spotify.dto.response.ArtistResponse;
+import com.spotify.spotify.dto.response.CustomPageImpl;
 import com.spotify.spotify.entity.Artist;
 import com.spotify.spotify.entity.ArtistFollow;
 import com.spotify.spotify.entity.User;
@@ -35,7 +36,7 @@ public class ArtistFollowService {
     UserRepository userRepository;
     ArtistMapper artistMapper;
 
-    @CacheEvict(value = {"my_followed_artists", "user_followed_artists"}, allEntries = true)
+    @CacheEvict(value = {"my_followed_artists", "user_followed_artists", "artist_detail", "artists_page"}, allEntries = true)
     @Transactional //phải có để Modifying chạy
     public boolean toggleFollow(String artistId){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -73,8 +74,9 @@ public class ArtistFollowService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        Page<Artist> follows = artistFollowRepository.findFollowedArtistByUserId(user.getId(), pageable);
-        return follows.map(artistMapper::toArtistResponse);
+        Page<ArtistResponse> page = artistFollowRepository.findFollowedArtistByUserId(user.getId(), pageable)
+                .map(artistMapper::toArtistResponse);
+        return new CustomPageImpl<>(page.getContent(), pageable, page.getTotalElements());
     }
 
     @Cacheable(value = "user_followed_artists", key = "#userId + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
@@ -85,8 +87,9 @@ public class ArtistFollowService {
         if (!Boolean.TRUE.equals(user.getIsPublicProfile())){//nếu null -> false
             throw new AppException(ErrorCode.USER_PROFILE_PRIVATE);
         }
-        return artistFollowRepository.findFollowedArtistByUserId(userId, pageable)
+        Page<ArtistFollowResponse> page = artistFollowRepository.findFollowedArtistByUserId(userId, pageable)
                 .map(artistMapper::toArtistFollowResponse);
+        return new CustomPageImpl<>(page.getContent(), pageable, page.getTotalElements());
     }
 
     public Long getFollowerCount(String artistId){ //chủ yếu báo lỗi 404

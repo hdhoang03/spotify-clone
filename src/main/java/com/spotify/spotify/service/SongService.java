@@ -1,12 +1,11 @@
 package com.spotify.spotify.service;
 
-import com.cloudinary.Cloudinary;
-import com.cloudinary.utils.ObjectUtils;
 import com.spotify.spotify.configuration.RabbitMQConfig;
 import com.spotify.spotify.constaint.NotificationTargetType;
 import com.spotify.spotify.dto.event.SseNotificationEvent;
 import com.spotify.spotify.dto.request.SongRequest;
 import com.spotify.spotify.dto.response.CloudinaryResponse;
+import com.spotify.spotify.dto.response.CustomPageImpl;
 import com.spotify.spotify.dto.response.NotificationResponse;
 import com.spotify.spotify.dto.response.SongResponse;
 import com.spotify.spotify.entity.*;
@@ -29,17 +28,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 import jakarta.persistence.criteria.JoinType;
 
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Slf4j
 @Service
@@ -58,7 +50,7 @@ public class SongService {
 
     private static final String UPLOAD_DIR = "uploads/";
 
-    @CacheEvict(value = {"song_detail", "songs_page", "songs_by_album", "songs_by_category", "songs_by_day", "get_songs_artist", "top_streamed_songs", "top_liked_songs"}, allEntries = true)
+    @CacheEvict(value = {"song_detail", "songs_page", "admin_songs_page", "songs_by_album", "songs_by_category", "songs_by_day", "get_songs_artist", "top_streamed_songs", "top_liked_songs"}, allEntries = true)
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public SongResponse createSong(SongRequest request){
@@ -122,7 +114,7 @@ public class SongService {
         return songMapper.toSongResponse(song);
     }
 
-    @CacheEvict(value = {"song_detail", "songs_page", "songs_by_album", "songs_by_category", "songs_by_day", "get_songs_artist", "top_streamed_songs", "top_liked_songs"}, allEntries = true)
+    @CacheEvict(value = {"song_detail", "songs_page", "admin_songs_page", "songs_by_album", "songs_by_category", "songs_by_day", "get_songs_artist", "top_streamed_songs", "top_liked_songs"}, allEntries = true)
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public SongResponse updateSong(String id, SongRequest request){
@@ -179,20 +171,23 @@ public class SongService {
 
     @Cacheable(value = "songs_page", key = "#pageable.pageNumber + '-' + #pageable.pageSize")
     public Page<SongResponse> getAllSongs(Pageable pageable){
-        return songRepository.findAllActiveSongs(pageable)
+        Page<SongResponse> page = songRepository.findAllActiveSongs(pageable)
                 .map(songMapper::toSongResponse);
+        return new CustomPageImpl<>(page.getContent(), pageable, page.getTotalElements());
     }
 
     @Cacheable(value = "songs_by_album", key = "#albumId + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<SongResponse> getSongsByAlbum(String albumId, Pageable pageable){
-        return songRepository.findByAlbum_Id(albumId, pageable)
+        Page<SongResponse> page = songRepository.findByAlbum_Id(albumId, pageable)
                 .map(songMapper::toSongResponse);
+        return new CustomPageImpl<>(page.getContent(), pageable, page.getTotalElements());
     }
 
     @Cacheable(value = "songs_by_category", key = "#categoryId + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<SongResponse> getSongsByCategory(String categoryId, Pageable pageable){
-        return songRepository.findByCategory_Id(categoryId, pageable)
+        Page<SongResponse> page = songRepository.findByCategory_Id(categoryId, pageable)
                 .map(songMapper::toSongResponse);
+        return new CustomPageImpl<>(page.getContent(), pageable, page.getTotalElements());
     }
 
 //    public List<SongResponse> getSongByArtist(String artistId){
@@ -215,7 +210,7 @@ public class SongService {
                 .toList();
     }
 
-    @Cacheable(value = "get_songs_artist")
+    @Cacheable(value = "get_songs_artist", key = "#artistId")
     public List<SongResponse> getSongByArtist(String artistId){
         List<Song> songs = songRepository.findTopPopularSongsByArtist(artistId);
         return songs.stream()
@@ -223,7 +218,7 @@ public class SongService {
                 .toList();
     }
 
-    @CacheEvict(value = {"song_detail", "songs_page", "songs_by_album", "songs_by_category", "songs_by_day", "get_songs_artist", "top_streamed_songs", "top_liked_songs"}, allEntries = true)
+    @CacheEvict(value = {"song_detail", "songs_page", "admin_songs_page", "songs_by_album", "songs_by_category", "songs_by_day", "get_songs_artist", "top_streamed_songs", "top_liked_songs"}, allEntries = true)
     @PreAuthorize("hasRole('ADMIN')")
     public void softDeleteSong(String id){
         Song song = songRepository.findById(id)
@@ -233,7 +228,7 @@ public class SongService {
         songRepository.save(song);
     }
 
-    @CacheEvict(value = {"song_detail", "songs_page", "songs_by_album", "songs_by_category", "songs_by_day", "get_songs_artist", "top_streamed_songs", "top_liked_songs"}, allEntries = true)
+    @CacheEvict(value = {"song_detail", "songs_page", "admin_songs_page", "songs_by_album", "songs_by_category", "songs_by_day", "get_songs_artist", "top_streamed_songs", "top_liked_songs"}, allEntries = true)
     @PreAuthorize("hasRole('ADMIN')")
     public void restoreSong(String id){
         Song song = songRepository.findById(id)
@@ -244,7 +239,7 @@ public class SongService {
         songRepository.save(song);
     }
 
-    @CacheEvict(value = {"song_detail", "songs_page", "songs_by_album", "songs_by_category", "songs_by_day", "get_songs_artist", "top_streamed_songs", "top_liked_songs"}, allEntries = true)
+    @CacheEvict(value = {"song_detail", "songs_page", "admin_songs_page", "songs_by_album", "songs_by_category", "songs_by_day", "get_songs_artist", "top_streamed_songs", "top_liked_songs"}, allEntries = true)
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public void forceDeleteSong(String id){
@@ -284,6 +279,7 @@ public class SongService {
         rabbitMQProducerService.sendMessage(RabbitMQConfig.SSE_QUEUE, event);
     }
 
+    @Cacheable(value = "admin_songs_page", key = "#keyword + '_' + #artist + '_' + #category + '_' + #year + '_' + #isDeleted + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<SongResponse> searchSongs(String keyword, String artist, String category, Integer year, boolean isDeleted, Pageable pageable){
         Specification<Song> spec = (root, query, criteriaBuilder) -> criteriaBuilder.conjunction();
 
@@ -309,7 +305,8 @@ public class SongService {
                     criteriaBuilder.equal(criteriaBuilder.function("YEAR", Integer.class, root.get("releaseDate")), year));
         }
 
-        return songRepository.findAll(spec, pageable)
+        Page<SongResponse> page = songRepository.findAll(spec, pageable)
                 .map(songMapper::toSongResponse);
+        return new CustomPageImpl<>(page.getContent(), pageable, page.getTotalElements());
     }
 }

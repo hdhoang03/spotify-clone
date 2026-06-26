@@ -16,9 +16,12 @@ spring:
     password: root
 
   jpa:
+    show-sql: true
     hibernate:
       ddl-auto: update
-    show-sql: true
+    properties:
+      hibernate:
+        default_batch_fetch_size: 100
 
   mail:
     host: smtp.gmail.com
@@ -55,10 +58,10 @@ spring:
       auto-offset-reset: earliest
 
   rabbitmq:
-    host: ${RABBITMQ_HOST:armadillo.rmq.cloudamqp.com}
-    port: ${RABBITMQ_PORT:5671}
-    username: ${RABBITMQ_USERNAME:wjfvhtck}
-    password: ${RABBITMQ_PASSWORD:pOEkCjNp-deqIlhub-wKwflZ3ZNOoCE4}
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
 
   lifecycle:
     timeout-per-shutdown-phase: 10

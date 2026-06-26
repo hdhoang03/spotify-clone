@@ -29,7 +29,7 @@ public class EmailService {
     SpringTemplateEngine templateEngine;
 
     @NonFinal
-    @Value("${spring.mail.username}")
+    @Value("${MAIL_FROM:hodanghoang2003@gmail.com}")
     String fromEmail;
 
     @Async //Gửi mail chạy ngầm không bị block api

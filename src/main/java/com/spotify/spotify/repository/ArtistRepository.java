@@ -61,4 +61,6 @@ public interface ArtistRepository extends JpaRepository<Artist, String> {
             WHERE a.id = :id AND a.followerCount > 0
             """)
     void decrementFollowerCount(@Param("id") String id);
+
+    long countByDeletedFalse();
 }

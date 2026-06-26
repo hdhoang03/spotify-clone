@@ -1,5 +1,6 @@
 package com.spotify.spotify.service;
 
+import com.spotify.spotify.dto.response.CustomPageImpl;
 import com.spotify.spotify.dto.response.LikeSongResponse;
 import com.spotify.spotify.dto.response.SongResponse;
 import com.spotify.spotify.dto.response.TopLikeSongResponse;
@@ -68,6 +69,7 @@ public class LikeSongService {
         return hasLiked;
     }
 
+    @Cacheable(value = "song_likes_count", key = "#songId")
     public Long countSongLikes(String songId){
         return likeSongRepository.countBySong_Id(songId);
     }
@@ -78,11 +80,12 @@ public class LikeSongService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        return likeSongRepository.findAllByUserIdFetchSong(user.getId(), pageable)
+        Page<LikeSongResponse> page = likeSongRepository.findAllByUserIdFetchSong(user.getId(), pageable)
                 .map(likeSongMapper::toLikeSongResponse);
+        return new CustomPageImpl<>(page.getContent(), pageable, page.getTotalElements());
     }
 
-    @CacheEvict(value = "my_song", allEntries = true)
+    @CacheEvict(value = {"my_song", "top_liked_songs"}, allEntries = true)
     @Transactional
     public boolean toggleLike(String songId){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -109,6 +112,7 @@ public class LikeSongService {
         String cacheKey = "like_check:" + username + ":" + songId;
         try {
             redisTemplate.opsForValue().set(cacheKey, result, 1, TimeUnit.HOURS);
+            redisTemplate.delete("song_likes_count::" + songId);
         } catch (Exception e) {
             log.error("Failed to update Redis like check cache", e);
         }
@@ -118,6 +122,7 @@ public class LikeSongService {
 
     @Cacheable(value = "top_liked_songs", key = "#pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<TopLikeSongResponse> getTopLikedSongs(Pageable pageable){
-        return likeSongRepository.findTopLikedSongs(pageable);
+        Page<TopLikeSongResponse> page = likeSongRepository.findTopLikedSongs(pageable);
+        return new CustomPageImpl<>(page.getContent(), pageable, page.getTotalElements());
     }
 }

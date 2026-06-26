@@ -7,6 +7,7 @@ import com.spotify.spotify.dto.request.CategoryRequest;
 import com.spotify.spotify.dto.request.CategoryUpdateRequest;
 import com.spotify.spotify.dto.response.CategoryResponse;
 import com.spotify.spotify.dto.response.CloudinaryResponse;
+import com.spotify.spotify.dto.response.CustomPageImpl;
 import com.spotify.spotify.entity.Category;
 import com.spotify.spotify.entity.Song;
 import com.spotify.spotify.exception.AppException;
@@ -48,7 +49,7 @@ public class CategoryService {
     CategoryMapper categoryMapper;
 
     //xóa sạch toàn bộ cache của Category mỗi khi có thay đổi (dùng allEntries = true).
-    @CacheEvict(value = {"categories_page", "category_detail", "categories_by_type"}, allEntries = true)
+    @CacheEvict(value = {"categories_page", "admin_categories_page", "category_detail", "categories_by_type"}, allEntries = true)
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public CategoryResponse createCategory(CategoryRequest request){
@@ -67,7 +68,7 @@ public class CategoryService {
         return categoryMapper.toCategoryResponse(category);
     }
 
-    @CacheEvict(value = {"categories_page", "category_detail", "categories_by_type"}, allEntries = true)
+    @CacheEvict(value = {"categories_page", "admin_categories_page", "category_detail", "categories_by_type", "songs_by_category"}, allEntries = true)
     @PreAuthorize("hasRole('ADMIN')")
     @Transactional //Rollback khi gặp lỗi
     public CategoryResponse addSongToCategory(String categoryId, List<String> songIds){
@@ -85,7 +86,7 @@ public class CategoryService {
         return categoryMapper.toCategoryResponse(category);
     }
 
-    @CacheEvict(value = {"categories_page", "category_detail", "categories_by_type"}, allEntries = true)
+    @CacheEvict(value = {"categories_page", "admin_categories_page", "category_detail", "categories_by_type"}, allEntries = true)
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public void removeSongFromCategory(String categoryId, String songId){
@@ -107,7 +108,8 @@ public class CategoryService {
     public Page<CategoryResponse> getAllCategories(Pageable pageable){
         Page<CategoryWithSongCount> projections = categoryRepository.findAllWithSongCountByDeletedFalse(pageable);
 
-        return projections.map(categoryMapper::toCategoryResponseFromProjection);
+        Page<CategoryResponse> mappedPage = projections.map(categoryMapper::toCategoryResponseFromProjection);
+        return new CustomPageImpl<>(mappedPage.getContent(), pageable, mappedPage.getTotalElements());
     }
 
     @Cacheable(value = "category_detail", key = "#id")
@@ -117,7 +119,7 @@ public class CategoryService {
         return categoryMapper.toCategoryResponse(category);
     }
 
-    @CacheEvict(value = {"categories_page", "category_detail", "categories_by_type"}, allEntries = true)
+    @CacheEvict(value = {"categories_page", "admin_categories_page", "category_detail", "categories_by_type"}, allEntries = true)
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public CategoryResponse updateCategory(String id, CategoryUpdateRequest request){
@@ -144,7 +146,7 @@ public class CategoryService {
         return categoryMapper.toCategoryResponse(category);
     }
 
-    @CacheEvict(value = {"categories_page", "category_detail", "categories_by_type"}, allEntries = true)
+    @CacheEvict(value = {"categories_page", "admin_categories_page", "category_detail", "categories_by_type"}, allEntries = true)
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public void deleteCategory(String id){
@@ -169,7 +171,7 @@ public class CategoryService {
         categoryRepository.save(category);
     }
 
-    @CacheEvict(value = {"categories_page", "category_detail", "categories_by_type"}, allEntries = true)
+    @CacheEvict(value = {"categories_page", "admin_categories_page", "category_detail", "categories_by_type"}, allEntries = true)
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public void restoreCategory(String id){
@@ -180,9 +182,11 @@ public class CategoryService {
         categoryRepository.save(category);
     }
 
+    @Cacheable(value = "admin_categories_page", key = "#keyword + '_' + #isDeleted + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<CategoryResponse> searchCategories(String keyword, boolean isDeleted, Pageable pageable){
         var projections = categoryRepository.searchCategoriesWithCount(keyword, isDeleted, pageable);
-        return projections.map(categoryMapper::toCategoryResponseFromProjection);
+        Page<CategoryResponse> mappedPage = projections.map(categoryMapper::toCategoryResponseFromProjection);
+        return new CustomPageImpl<>(mappedPage.getContent(), pageable, mappedPage.getTotalElements());
     }
 
     @Cacheable(value = "categories_by_type", key = "#type.name()")
@@ -193,7 +197,7 @@ public class CategoryService {
                 .collect(Collectors.toList());
     }
 
-    @CacheEvict(value = {"categories_page", "category_detail", "categories_by_type"}, allEntries = true)
+    @CacheEvict(value = {"categories_page", "admin_categories_page", "category_detail", "categories_by_type"}, allEntries = true)
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public CategoryResponse updateDisplayOrder(String id, Integer newOrder){

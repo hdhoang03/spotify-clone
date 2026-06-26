@@ -126,6 +126,7 @@ public class SongStreamService {
 //        return songStreamMapper.toSongStreamResponse(songStreamRepository.save(stream));
 //    }
 
+    @Cacheable(value = "song_valid_stream_count", key = "#songId")
     public long getValidStreamCount(String songId){
         return songStreamRepository.countBySongIdAndValidStreamTrue(songId);
     }
@@ -154,6 +155,9 @@ public class SongStreamService {
 
         songRepository.incrementStreamCount(songId);
 
+        redisTemplate.delete("song_stream_count::" + songId);
+        redisTemplate.delete("stream_valid_stream_count::" + songId);
+
         SongStream stream = songStreamMapper.toSongStream(request);
         stream.setUser(user);
         stream.setSong(song);
@@ -163,6 +167,7 @@ public class SongStreamService {
         return songStreamMapper.toSongStreamResponse(songStreamRepository.save(stream));
     }
 
+    @Cacheable(value = "song_stream_count", key = "#songId")
     public Long countSongStream(String songId){ //Đếm số lượt stream của bài hát đó
         return songStreamRepository.countBySongId(songId);
     }
@@ -195,6 +200,7 @@ public class SongStreamService {
         return songStreamRepository.findTopStreamSongs();
     }
 
+    @Cacheable(value = "my_top_tracks", key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName() + '_' + #month + '_' + #year")
     public List<TopLikeSongResponse> getMyTopTracksOfThisMonth(int month, int year){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
@@ -203,6 +209,7 @@ public class SongStreamService {
         return songStreamRepository.findMyTopTracksOfThisMonth(user.getId(), month, year);
     }
 
+    @Cacheable(value = "my_top_artists", key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName() + '_' + #month + '_' + #year")
     public List<ArtistResponse> getMyTopArtistsOfMonth(int month, int year){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)

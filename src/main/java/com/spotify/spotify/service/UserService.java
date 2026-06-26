@@ -59,6 +59,7 @@ public class UserService {
 //    KafkaProducerService kafkaProducerService;
 //    CaptchaService captchaService;
 
+    @CacheEvict(value = "admin_users_page", allEntries = true)
     @PreAuthorize("hasRole('ADMIN')")
     public UserResponse createUser(UserCreationRequest request){
 //        if (!captchaService.verifyCaptcha(request.getCaptchaToken())){
@@ -86,7 +87,7 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
-    @CacheEvict(value = "user_profile", allEntries = true)
+    @CacheEvict(value = {"user_profile", "my_info", "admin_users_page"}, allEntries = true)
     public UserResponse updateUser(UserUpdateRequest request, String userId){
         User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found."));
 
@@ -95,6 +96,7 @@ public class UserService {
         return userMapper.toUserResponse(userRepository.save(user));
     }
 
+    @CacheEvict(value = {"user_profile", "my_info", "admin_users_page"}, allEntries = true)
     @PreAuthorize("hasRole('ADMIN')")
     public void deleteUser(String userId){
         User user = userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
@@ -111,18 +113,21 @@ public class UserService {
         userRepository.deleteById(userId);
     }
 
+    @Cacheable(value = "admin_users_page", key = "#keyword + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     @PreAuthorize("hasRole('ADMIN')")
     public Page<UserResponse> searchUser(String keyword, String currentUserId, Pageable pageable){
+        Page<UserResponse> page;
         if (keyword == null || keyword.trim().isEmpty()){
-            return userRepository.findAll(pageable)
+            page = userRepository.findAll(pageable)
+                    .map(userMapper::toUserResponse);
+        } else {
+            page = userRepository.searchUsersMultiColumns(keyword.trim(), currentUserId, pageable)
                     .map(userMapper::toUserResponse);
         }
-
-        return userRepository.searchUsersMultiColumns(keyword.trim(), currentUserId, pageable)
-                .map(userMapper::toUserResponse);
+        return new com.spotify.spotify.dto.response.CustomPageImpl<>(page.getContent(), pageable, page.getTotalElements());
     }
 
-//    @Cacheable(value = "my_info")
+    @Cacheable(value = "my_info", key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public UserResponse getMyInfo(){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
@@ -131,6 +136,7 @@ public class UserService {
         return userMapper.toUserResponse(user);
     }
 
+    @CacheEvict(value = "admin_users_page", allEntries = true)
     public void toggleUserStatus(String userId){
         User user = userRepository.findById(userId).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
@@ -467,7 +473,7 @@ public class UserService {
         }
     }
 
-    @CacheEvict(value = "user_profile", allEntries = true)
+    @CacheEvict(value = {"user_profile", "my_info"}, allEntries = true)
     @Transactional
     public UserProfileResponse updateMyProfile(UserProfileUpdateRequest request){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
