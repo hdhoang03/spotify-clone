@@ -46,10 +46,6 @@ spring:
 #          connectiontimeout: 15000
 #          timeout: 15000
 #          writetimeout: 15000
-  brevo:
-    api-key: ${BREVO_API_KEY} # Khai báo biến này trên Railway
-    sender-email: ${MAIL_FROM}
-    sender-name: "SpringTunes Service"
 
   data:
     redis:
@@ -82,6 +78,11 @@ spring:
 
   lifecycle:
     timeout-per-shutdown-phase: 10
+
+brevo:
+  api-key: ${BREVO_API_KEY} # Khai báo biến này trên Railway
+  sender-email: ${MAIL_FROM}
+  sender-name: "SpringTunes Service"
 
 jwt:
   signerKey: ${JWT_SECRET_KEY:b2yoP+BXkNpTkT3UA7TSAHxqoLxuzgZIRmscynx2zbm5PHbtt3U+JB5N1G6AIrNg}

@@ -23,21 +23,21 @@ spring:
       hibernate:
         default_batch_fetch_size: 100
 
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${SMTP_USERNAME:hodanghoang2003@gmail.com}
-    password: ${SMTP_PASSWORD:svclbhpapszfodqr}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-            required: true
-          connectiontimeout: 5000
-          timeout: 5000
-          writetimeout: 5000
+#  mail:
+#    host: smtp.gmail.com
+#    port: 587
+#    username: ${SMTP_USERNAME:hodanghoang2003@gmail.com}
+#    password: ${SMTP_PASSWORD:svclbhpapszfodqr}
+#    properties:
+#      mail:
+#        smtp:
+#          auth: true
+#          starttls:
+#            enable: true
+#            required: true
+#          connectiontimeout: 5000
+#          timeout: 5000
+#          writetimeout: 5000
 
   data:
     redis:
@@ -65,6 +65,11 @@ spring:
 
   lifecycle:
     timeout-per-shutdown-phase: 10
+
+brevo:
+  api-key: ${BREVO_API_KEY} # Khai báo biến này trên Railway
+  sender-email: ${MAIL_FROM}
+  sender-name: "SpringTunes Service"
 
 jwt:
   signerKey: ${JWT_SECRET_KEY:b2yoP+BXkNpTkT3UA7TSAHxqoLxuzgZIRmscynx2zbm5PHbtt3U+JB5N1G6AIrNg}

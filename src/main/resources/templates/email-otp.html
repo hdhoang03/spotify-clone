@@ -1,222 +1,96 @@
-<!--<!DOCTYPE html>-->
-<!--<html xmlns:th="http://www.thymeleaf.org">-->
-<!--<head>-->
-<!--    <meta charset="UTF-8">-->
-<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
-<!--    <title>Xác thực tài khoản</title>-->
-<!--    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;600;800&display=swap" rel="stylesheet">-->
-
-<!--    <style>-->
-<!--        body {-->
-<!--            margin: 0; padding: 0;-->
-<!--            background-color: #f9f9f9;-->
-<!--            /* Thiết lập Lexend là font ưu tiên hàng đầu */-->
-<!--            font-family: 'Lexend', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;-->
-<!--            -webkit-font-smoothing: antialiased;-->
-<!--        }-->
-<!--        .container {-->
-<!--            max-width: 500px;-->
-<!--            margin: 40px auto;-->
-<!--            background: #ffffff;-->
-<!--            border-radius: 24px;-->
-<!--            overflow: hidden;-->
-<!--            box-shadow: 0 10px 30px rgba(0,0,0,0.04);-->
-<!--        }-->
-<!--        .content {-->
-<!--            padding: 40px;-->
-<!--            text-align: center;-->
-<!--        }-->
-
-<!--        .logo {-->
-<!--            font-size: 24px;-->
-<!--            font-weight: 800;-->
-<!--            color: #1DB954;-->
-<!--            letter-spacing: -1px;-->
-<!--            margin-bottom: 30px;-->
-<!--            display: block;-->
-<!--            text-decoration: none;-->
-<!--        }-->
-
-<!--        h1 {-->
-<!--            color: #191414;-->
-<!--            font-size: 32px;-->
-<!--            font-weight: 800;-->
-<!--            margin-bottom: 12px;-->
-<!--            letter-spacing: -1px; /* Lexend đẹp hơn khi tracking hẹp lại một chút ở tiêu đề */-->
-<!--        }-->
-<!--        p {-->
-<!--            color: #535353;-->
-<!--            font-size: 15px;-->
-<!--            font-weight: 400;-->
-<!--            line-height: 1.7;-->
-<!--            margin-bottom: 25px;-->
-<!--        }-->
-
-<!--        .otp-container {-->
-<!--            background-color: #F8F8F8;-->
-<!--            border-radius: 20px;-->
-<!--            padding: 35px 20px;-->
-<!--            margin: 30px 0;-->
-<!--            border: 1px solid #eeeeee;-->
-<!--        }-->
-<!--        .otp-label {-->
-<!--            font-size: 11px;-->
-<!--            text-transform: uppercase;-->
-<!--            color: #919191;-->
-<!--            font-weight: 600;-->
-<!--            letter-spacing: 2px;-->
-<!--            margin-bottom: 15px;-->
-<!--        }-->
-<!--        .otp-code {-->
-<!--            font-size: 48px;-->
-<!--            font-weight: 800;-->
-<!--            color: #1DB954;-->
-<!--            letter-spacing: 8px;-->
-<!--            margin: 0;-->
-<!--            /* Đảm bảo số hiển thị đẹp với Lexend */-->
-<!--            font-variant-numeric: tabular-nums;-->
-<!--        }-->
-
-<!--        .timer-warning {-->
-<!--            display: inline-block;-->
-<!--            background: #fff1f0;-->
-<!--            color: #eb2f96;-->
-<!--            padding: 8px 20px;-->
-<!--            border-radius: 50px;-->
-<!--            font-size: 13px;-->
-<!--            font-weight: 600;-->
-<!--        }-->
-
-<!--        .footer {-->
-<!--            padding: 30px;-->
-<!--            text-align: center;-->
-<!--            font-size: 12px;-->
-<!--            color: #A7A7A7;-->
-<!--            background: #ffffff;-->
-<!--            border-top: 1px solid #f0f0f0;-->
-<!--        }-->
-
-<!--        @media (max-width: 600px) {-->
-<!--            .container { margin: 0; border-radius: 0; width: 100%; }-->
-<!--            .content { padding: 40px 24px; }-->
-<!--            h1 { font-size: 28px; }-->
-<!--        }-->
-<!--    </style>-->
-<!--</head>-->
-<!--<body>-->
-<!--<div class="container">-->
-<!--    <div class="content">-->
-<!--        <a href="#" class="logo">SpringTunes</a>-->
-
-<!--        <h1>Xác thực danh tính</h1>-->
-<!--        <p>Hey <span th:text="${name}" style="color: #191414; font-weight: 600;">User</span>! Để đảm bảo an toàn, hãy sử dụng mã dưới đây để tiếp tục trải nghiệm âm nhạc nhé.</p>-->
-
-<!--        <div class="otp-container">-->
-<!--            <div class="otp-label">Mã xác thực của bạn</div>-->
-<!--            <div class="otp-code" th:text="${otp}">123456</div>-->
-<!--        </div>-->
-
-<!--        <div class="timer-warning">-->
-<!--            Hiệu lực trong 5 phút-->
-<!--        </div>-->
-
-<!--        <p style="margin-top: 35px; font-size: 13px; color: #919191;">-->
-<!--            Đừng chia sẻ mã này cho bất kỳ ai. <br>-->
-<!--            Nếu không phải bạn yêu cầu, hãy cứ yên tâm bỏ qua email này.-->
-<!--        </p>-->
-<!--    </div>-->
-
-<!--    <div class="footer">-->
-<!--        <p style="margin-bottom: 10px; font-weight: 600;">&copy; 2025 Spotify Clone Project. Made with 💚</p>-->
-<!--        <p>Bạn nhận được mail này vì đã yêu cầu đăng ký tài khoản.</p>-->
-<!--    </div>-->
-<!--</div>-->
-<!--</body>-->
-<!--</html>
-
--->
-
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="light dark">
-    <title>Mã xác thực: <span th:text="${otp}">123456</span></title> <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap" rel="stylesheet">
+    <title>Mã xác thực SpringTunes</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
     <style>
         :root { color-scheme: light dark; }
         body {
-            font-family: 'Lexend', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            line-height: 1.5;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.6;
             margin: 0;
             padding: 40px 20px;
-            color: #121212;
-            background-color: #ffffff;
+            background-color: #f9f9f9;
+            color: #111111;
         }
-
-        .content {
-            max-width: 400px;
+        .container {
+            max-width: 420px;
             margin: 0 auto;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
         }
-
+        .content {
+            padding: 40px 32px;
+            text-align: center;
+        }
         .logo {
+            font-size: 20px;
+            font-weight: 600;
             color: #1DB954;
-            font-weight: 700;
-            font-size: 18px;
             text-decoration: none;
-            display: block;
             margin-bottom: 32px;
+            display: inline-block;
         }
-
         h1 {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            letter-spacing: -0.5px;
+            font-size: 22px;
+            font-weight: 600;
+            margin: 0 0 16px 0;
+            color: #1f1f1f;
         }
-
         .otp {
-            font-size: 40px;
+            font-size: 36px;
             font-weight: 700;
+            letter-spacing: 6px;
             color: #1DB954;
             margin: 24px 0;
-            letter-spacing: 4px;
+            padding: 12px 0;
         }
-
+        p {
+            color: #555555;
+            font-size: 15px;
+        }
         .footer {
-            margin-top: 48px;
+            padding: 28px 32px;
+            text-align: center;
             font-size: 13px;
-            color: #6A6A6A;
+            color: #777777;
             border-top: 1px solid #eeeeee;
-            padding-top: 24px;
         }
 
-        /* Dark Mode */
         @media (prefers-color-scheme: dark) {
-            body { background-color: #121212 !important; color: #ffffff !important; }
-            .footer { border-top-color: #282828 !important; color: #A7A7A7 !important; }
-            h1 { color: #ffffff !important; }
+            body { background-color: #0f0f0f; }
+            .container { background: #1a1a1a; }
+            h1, p { color: #ffffff; }
+            .footer { border-top-color: #333333; color: #aaaaaa; }
         }
     </style>
 </head>
 <body>
-<div class="content">
-    <a href="#" class="logo">SpringTunes</a>
+<div class="container">
+    <div class="content">
+        <a href="#" class="logo">SpringTunes</a>
 
-    <p style="margin-bottom: 8px;">Xin chào <strong th:text="${name}">User</strong>,</p>
-    <h1>Mã xác thực của bạn là:</h1>
+        <h1>Xin chào <span th:text="${name}">bạn</span>,</h1>
+        <p>Mã xác thực của bạn là:</p>
 
-    <div class="otp" th:text="${otp}">123456</div>
+        <div class="otp" th:text="${otp}">123456</div>
 
-    <p style="font-size: 14px; color: #6A6A6A;">
-        Mã này sẽ hết hạn sau <strong>5 phút</strong>.<br>
-        Vui lòng không chia sẻ mã này với bất kỳ ai.
-    </p>
+        <p style="margin-top: 8px;">
+            Mã này sẽ hết hạn sau <strong>5 phút</strong>.
+        </p>
+        <p style="font-size: 14px; margin-top: 24px;">
+            Vui lòng không chia sẻ mã này với bất kỳ ai.
+        </p>
+    </div>
 
     <div class="footer">
-        &copy; 2026 SpringTunes Team. <br>
-        Nếu bạn không yêu cầu mã này, bạn có thể an tâm bỏ qua email.
+        © 2026 SpringTunes<br>
+        Nếu bạn không yêu cầu mã này, vui lòng bỏ qua email.
     </div>
 </div>
 </body>
