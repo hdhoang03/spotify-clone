@@ -39,9 +39,13 @@ spring:
           starttls:
             enable: true
             required: true
-          connectiontimeout: 5000
-          timeout: 5000
-          writetimeout: 5000
+          socketFactory:
+            class: javax.net.ssl.SSLSocketFactory
+            fallback: "false"
+            port: 2525
+          connectiontimeout: 15000
+          timeout: 15000
+          writetimeout: 15000
 
   data:
     redis:
