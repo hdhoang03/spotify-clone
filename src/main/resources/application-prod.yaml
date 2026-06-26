@@ -27,25 +27,29 @@ spring:
       ddl-auto: update
     show-sql: true
 
-  mail:
-    host: smtp-relay.brevo.com
-    port: 2525
-    username: ${SMTP_USERNAME}
-    password: ${SMTP_PASSWORD}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-            required: true
-          socketFactory:
-            class: javax.net.ssl.SSLSocketFactory
-            fallback: "false"
-            port: 2525
-          connectiontimeout: 15000
-          timeout: 15000
-          writetimeout: 15000
+#  mail:
+#    host: smtp-relay.brevo.com
+#    port: 2525
+#    username: ${SMTP_USERNAME}
+#    password: ${SMTP_PASSWORD}
+#    properties:
+#      mail:
+#        smtp:
+#          auth: true
+#          starttls:
+#            enable: true
+#            required: true
+#          socketFactory:
+#            class: javax.net.ssl.SSLSocketFactory
+#            fallback: "false"
+#            port: 2525
+#          connectiontimeout: 15000
+#          timeout: 15000
+#          writetimeout: 15000
+  brevo:
+    api-key: ${BREVO_API_KEY} # Khai báo biến này trên Railway
+    sender-email: ${MAIL_FROM}
+    sender-name: "SpringTunes Service"
 
   data:
     redis:
