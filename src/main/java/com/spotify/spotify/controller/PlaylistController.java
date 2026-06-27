@@ -118,4 +118,15 @@ public class PlaylistController {
                 .result(playlistService.getPlaylistSongs(playlistId, PageRequest.of(page - 1, size)))
                 .build();
     }
+
+    @GetMapping("/{playlistId}/songs/search")
+    ApiResponse<Page<PlaylistSongResponse>> searchSongsInPlaylist(@PathVariable String playlistId,
+                                                                   @RequestParam String q,
+                                                                   @RequestParam(defaultValue = "1") int page,
+                                                                   @RequestParam(defaultValue = "50") int size){
+        return ApiResponse.<Page<PlaylistSongResponse>>builder()
+                .code(1000)
+                .result(playlistService.searchSongsInPlaylist(playlistId, q, PageRequest.of(page - 1, size)))
+                .build();
+    }
 }

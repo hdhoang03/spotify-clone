@@ -182,6 +182,33 @@ public class PlaylistService {
         return new CustomPageImpl<>(mappedPage.getContent(), pageable, mappedPage.getTotalElements());
     }
 
+    // Không cache vì keyword thay đổi liên tục — hit rate thấp, tốn bộ nhớ Redis
+    public Page<PlaylistSongResponse> searchSongsInPlaylist(String playlistId, String keyword, Pageable pageable){
+        if (keyword == null || keyword.trim().isEmpty()){
+            return getPlaylistSongs(playlistId, pageable);
+        }
+        Page<PlaylistSong> result = playlistSongRepository.searchInPlaylist(playlistId, keyword.trim(), pageable);
+        return new CustomPageImpl<>(
+                result.map(ps -> {
+                    Song s = ps.getSong();
+                    return PlaylistSongResponse.builder()
+                            .id(s.getId())
+                            .title(s.getTitle())
+                            .artist(s.getArtist() != null ? s.getArtist().getName() : "Unknown")
+                            .artistId(s.getArtist() != null ? s.getArtist().getId() : null)
+                            .albumName(s.getAlbum() != null ? s.getAlbum().getName() : null)
+                            .coverUrl(s.getCoverUrl())
+                            .audioUrl(s.getAudioUrl())
+                            .duration(s.getDuration())
+                            .addedAt(ps.getAddedAt())
+                            .isDeleted(s.isDeleted())
+                            .build();
+                }).getContent(),
+                pageable,
+                result.getTotalElements()
+        );
+    }
+
     @Cacheable(value = "user_playlists", key = "#userId + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<PlaylistResponse> getUserPublicPlaylists(String userId, Pageable pageable){
         if (!userRepository.existsById(userId)){
@@ -210,9 +237,7 @@ public class PlaylistService {
         }
         return playlist;
     }
-
-    /*Nếu Chủ sở hữu gọi API này trước, Redis sẽ lưu nguyên một list gồm cả Private + Public.
-    Lúc sau người ngoài ấn vào tường của Chủ sở hữu, Redis nhả thẳng cái list đó ra -> Lộ toàn bộ Playlist ẩn.*/
+    
 //    @Cacheable(value = "user_playlists", key = "#targetUserId + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<PlaylistResponse> getUserPlaylists(String targetUserId, Pageable pageable){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();

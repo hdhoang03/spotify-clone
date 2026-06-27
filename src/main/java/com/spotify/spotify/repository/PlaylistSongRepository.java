@@ -11,8 +11,15 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.Optional;
 
 public interface PlaylistSongRepository extends JpaRepository<PlaylistSong, String> {
-    @Query("SELECT ps FROM PlaylistSong ps WHERE ps.playlist.id = :playlistId")
-    Page<PlaylistSong> findByPlaylistIdOrderByAddedAtDesc(String playlistId, Pageable pageable);
+    // JOIN FETCH để load song + artist + album trong 1 SQL query, tránh N+1
+    // ManyToOne FETCH JOIN an toàn với Pageable (không bị in-memory pagination warning)
+    @Query("SELECT ps FROM PlaylistSong ps " +
+            "JOIN FETCH ps.song s " +
+            "LEFT JOIN FETCH s.artist a " +
+            "LEFT JOIN FETCH s.album alb " +
+            "WHERE ps.playlist.id = :playlistId " +
+            "ORDER BY ps.addedAt DESC")
+    Page<PlaylistSong> findByPlaylistIdOrderByAddedAtDesc(@Param("playlistId") String playlistId, Pageable pageable);
 
 //    Hoặc cái này cũng được
 //    Page<PlaylistSong> findByPlaylist_IdAndSong_DeletedFalseOrderByAddedAtDesc(String playlistId, Pageable pageable);
@@ -23,4 +30,18 @@ public interface PlaylistSongRepository extends JpaRepository<PlaylistSong, Stri
     @Modifying
     @Query("DELETE FROM PlaylistSong ps WHERE ps.playlist.id = :playlistId AND ps.song.id = :songId")
     void deleteByPlaylistIdAndSongId(@Param("playlistId") String playlistId, @Param("songId") String songId);
+
+    // Tìm kiếm bài hát trong playlist theo keyword (title hoặc tên artist)
+    // JOIN FETCH để filter + load trong 1 query, JOIN thường chỉ để filter sẽ gây N+1
+    @Query("SELECT ps FROM PlaylistSong ps " +
+            "JOIN FETCH ps.song s " +
+            "LEFT JOIN FETCH s.artist a " +
+            "LEFT JOIN FETCH s.album alb " +
+            "WHERE ps.playlist.id = :playlistId " +
+            "AND (LOWER(s.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "  OR LOWER(a.name)  LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "ORDER BY ps.addedAt DESC")
+    Page<PlaylistSong> searchInPlaylist(@Param("playlistId") String playlistId,
+                                        @Param("keyword") String keyword,
+                                        Pageable pageable);
 }

@@ -85,6 +85,15 @@ public class RedisConfig {
         cacheConfigs.put("artists_page",    defaultConfig.entryTtl(Duration.ofMinutes(5)));
         cacheConfigs.put("artist_detail",   defaultConfig.entryTtl(Duration.ofMinutes(5)));
         cacheConfigs.put("albums_by_artist",defaultConfig.entryTtl(Duration.ofMinutes(5)));
+        cacheConfigs.put("user_profile",    defaultConfig.entryTtl(Duration.ofMinutes(10)));
+        cacheConfigs.put("my_info",         defaultConfig.entryTtl(Duration.ofMinutes(10)));
+        cacheConfigs.put("user_playlists",  defaultConfig.entryTtl(Duration.ofMinutes(10)));
+        cacheConfigs.put("my_playlists",    defaultConfig.entryTtl(Duration.ofMinutes(10)));
+        cacheConfigs.put("playlist_detail", defaultConfig.entryTtl(Duration.ofMinutes(10)));
+        cacheConfigs.put("playlist_songs",  defaultConfig.entryTtl(Duration.ofMinutes(5)));
+        cacheConfigs.put("like_status",     defaultConfig.entryTtl(Duration.ofMinutes(5)));
+        cacheConfigs.put("premium_status",  defaultConfig.entryTtl(Duration.ofMinutes(5)));
+        cacheConfigs.put("premium_details", defaultConfig.entryTtl(Duration.ofMinutes(5)));
 
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(defaultConfig)

@@ -24,7 +24,6 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.Caching;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -155,7 +154,7 @@ public class UserService {
     }
 
     @Transactional
-    @CacheEvict(value = "user_profile", key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @CacheEvict(value = "user_profile", allEntries = true)
     public Boolean togglePrivacy(){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
@@ -165,9 +164,7 @@ public class UserService {
         return newStatus;
     }
 
-    //Vì userId có thể là chữ "me", ta phải dùng SpEL để ép nó thành username thực sự
-    // nếu không User A gọi "me", User B cũng gọi "me" sẽ bị trả về nhầm Profile của A.
-    @Cacheable(value = "user_profile", key = "#userId == 'me' ? T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName() : #userId")
+    @Cacheable(value = "user_profile", key = "(#userId == 'me' ? T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName() : #userId) + '_viewer_' + T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public UserProfileResponse getUserProfile(String userId){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User currentUser = userRepository.findByUsername(username)
@@ -272,12 +269,7 @@ public class UserService {
 //    }
 
     @Transactional
-    @Caching(evict = {
-            // Xóa profile của mình
-            @CacheEvict(value = "user_profile", key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()"),
-            // Xóa profile của người bị follow/block
-            @CacheEvict(value = "user_profile", key = "#targetUserId")
-    })
+    @CacheEvict(value = "user_profile", allEntries = true)
     public boolean toggleFollowUser(String targetUserId){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User currentUser = userRepository.findByUsername(username)
@@ -336,12 +328,7 @@ public class UserService {
     }
 
     @Transactional
-    @Caching(evict = {
-            // Xóa profile của mình
-            @CacheEvict(value = "user_profile", key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()"),
-            // Xóa profile của người bị follow/block
-            @CacheEvict(value = "user_profile", key = "#targetUserId")
-    })
+    @CacheEvict(value = "user_profile", allEntries = true)
     public boolean toggleBlockUser(String targetUserId){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User currentUser = userRepository.findByUsername(username)
@@ -508,7 +495,7 @@ public class UserService {
         }
     }
 
-    @CacheEvict(value = {"user_profile", "my_info"}, key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @CacheEvict(value = {"user_profile", "my_info", "admin_users_page"}, allEntries = true)
     @Transactional
     public UserProfileResponse updateMyProfile(UserProfileUpdateRequest request){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -557,7 +544,7 @@ public class UserService {
     }
 
     @Transactional
-    @CacheEvict(value = "user_profile",  allEntries = true)
+    @CacheEvict(value = {"user_profile", "my_info"}, allEntries = true)
     public void updatePreferredLanguage(LanguageUpdateRequest request){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
