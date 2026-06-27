@@ -170,12 +170,13 @@ public class PlaylistService {
                     .id(s.getId())
                     .title(s.getTitle())
                     .artist(s.getArtist() != null ? s.getArtist().getName() : "Unknown")
-                    .artistId(s.getArtist().getId())
+                    .artistId(s.getArtist() != null ? s.getArtist().getId() : null)
                     .albumName(s.getAlbum() != null ? s.getAlbum().getName() : null)
                     .coverUrl(s.getCoverUrl())
                     .audioUrl(s.getAudioUrl())
                     .duration(s.getDuration())
                     .addedAt(ps.getAddedAt())
+                    .isDeleted(s.isDeleted())
                     .build();
         });
         return new CustomPageImpl<>(mappedPage.getContent(), pageable, mappedPage.getTotalElements());

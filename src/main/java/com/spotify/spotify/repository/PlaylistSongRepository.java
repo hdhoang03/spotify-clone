@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.Optional;
 
 public interface PlaylistSongRepository extends JpaRepository<PlaylistSong, String> {
-    @Query("SELECT ps FROM PlaylistSong ps WHERE ps.playlist.id = :playlistId AND ps.song.deleted = false")
+    @Query("SELECT ps FROM PlaylistSong ps WHERE ps.playlist.id = :playlistId")
     Page<PlaylistSong> findByPlaylistIdOrderByAddedAtDesc(String playlistId, Pageable pageable);
 
 //    Hoặc cái này cũng được

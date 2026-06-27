@@ -30,6 +30,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -217,9 +218,10 @@ public class SongStreamService {
 
         List<Artist> topArtists = songStreamRepository.findMyTopArtistsOfThisMonthEntity(user.getId(), month, year);
 
+        // Dùng Collectors.toList() thay vì Stream.toList() để trả về ArrayList (Jackson serialize được)
         return topArtists.stream()
                 .map(artistMapper::toArtistResponse)
-                .toList();
+                .collect(Collectors.toList());
     }
 }
 

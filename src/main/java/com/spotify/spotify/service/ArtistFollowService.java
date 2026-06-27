@@ -35,6 +35,7 @@ public class ArtistFollowService {
     ArtistRepository artistRepository;
     UserRepository userRepository;
     ArtistMapper artistMapper;
+    ArtistService artistService; // dùng để evict follow-cache của user
 
     @CacheEvict(value = {"my_followed_artists", "user_followed_artists", "artist_detail", "artists_page"}, allEntries = true)
     @Transactional //phải có để Modifying chạy
@@ -45,16 +46,17 @@ public class ArtistFollowService {
 
         Optional<ArtistFollow> existing = artistFollowRepository.findByUserIdAndArtistId(user.getId(), artistId);
 
+        boolean isNowFollowing;
         if (existing.isPresent()){
             artistFollowRepository.delete(existing.get());
-            artistRepository.decrementFollowerCount(artistId);//giảm lượt follow của nghệ sĩ
-            return false; //unfollow
+            artistRepository.decrementFollowerCount(artistId); // giảm lượt follow
+            isNowFollowing = false; // unfollow
         } else {
             if(!artistRepository.existsById(artistId)){
                 throw new AppException(ErrorCode.ARTIST_NOT_FOUND);
             }
 
-            Artist artistProxy = artistRepository.getReferenceById(artistId);//tạo proxy đỡ tốn 1 dòng SELECT Artist
+            Artist artistProxy = artistRepository.getReferenceById(artistId);
 
             artistFollowRepository.save(
                     ArtistFollow.builder()
@@ -64,8 +66,13 @@ public class ArtistFollowService {
                             .build()
             );
             artistRepository.incrementFollowerCount(artistId);
-            return true;
+            isNowFollowing = true; // follow
         }
+
+        // Xóa follow-cache của user trong Redis (user_id_by_name + followed_artist_ids)
+        // để lần gọi kế tiếp getAllArtists() phản ánh đúng trạng thái follow mới
+        artistService.evictUserFollowCache(username);
+        return isNowFollowing;
     }
 
     @Cacheable(value = "my_followed_artists", key = "#username + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")

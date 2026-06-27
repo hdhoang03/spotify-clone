@@ -32,6 +32,7 @@ import jakarta.persistence.criteria.JoinType;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -204,18 +205,22 @@ public class SongService {
 
     @Cacheable(value = "songs_by_day")
     public List<SongResponse> getAllSongsByDay(){
+        // Dùng Collectors.toList() thay vì Stream.toList() để trả về ArrayList (mutable)
+        // Stream.toList() trả về ImmutableCollections$ListN — class nội bộ JDK không có constructor mặc định
+        // khiến Jackson không thể deserialize từ Redis khi activateDefaultTyping được bật
         return songRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))
                 .stream()
                 .map(songMapper::toSongResponse)
-                .toList();
+                .collect(Collectors.toList());
     }
 
     @Cacheable(value = "get_songs_artist", key = "#artistId")
     public List<SongResponse> getSongByArtist(String artistId){
         List<Song> songs = songRepository.findTopPopularSongsByArtist(artistId);
+        // Dùng Collectors.toList() thay vì Stream.toList() để trả về ArrayList
         return songs.stream()
                 .map(songMapper::toSongResponse)
-                .toList();
+                .collect(Collectors.toList());
     }
 
     @CacheEvict(value = {"song_detail", "songs_page", "admin_songs_page", "songs_by_album", "songs_by_category", "songs_by_day", "get_songs_artist", "top_streamed_songs", "top_liked_songs"}, allEntries = true)

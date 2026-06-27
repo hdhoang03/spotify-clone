@@ -220,7 +220,6 @@ import com.spotify.spotify.dto.response.ArtistResponse;
 import com.spotify.spotify.dto.response.CloudinaryResponse;
 import com.spotify.spotify.dto.response.CustomPageImpl;
 import com.spotify.spotify.entity.Artist;
-import com.spotify.spotify.entity.User;
 import com.spotify.spotify.exception.AppException;
 import com.spotify.spotify.exception.ErrorCode;
 import com.spotify.spotify.mapper.ArtistMapper;
@@ -236,14 +235,14 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -257,10 +256,12 @@ public class ArtistService {
     ArtistRepository artistRepository;
     UserRepository userRepository;
     ArtistMapper artistMapper;
+    RedisTemplate<String, Object> redisTemplate;
 
-    // ─────────────────────────────────────────────
-    //  ADMIN: tạo / sửa / xóa / khôi phục
-    // ─────────────────────────────────────────────
+    private static final String USER_ID_CACHE_KEY = "user_id_by_name::";   // TTL 30 phút
+    private static final String FOLLOWED_IDS_KEY   = "followed_artist_ids::"; // TTL 5 phút
+    // Số trang tối đa một user có thể đã truy cập — dùng để evict không cần KEYS scan
+    private static final int MAX_CACHED_PAGES = 20;
 
     @CacheEvict(value = {"artists_page", "admin_artists_page", "artist_detail", "albums_by_artist"}, allEntries = true)
     @Transactional
@@ -316,42 +317,19 @@ public class ArtistService {
         artistRepository.save(artist);
     }
 
-    // ─────────────────────────────────────────────
-    //  PUBLIC: lấy danh sách / chi tiết
-    // ─────────────────────────────────────────────
-
-    /**
-     * getAllArtists — cache an toàn.
-     *
-     * VẤN ĐỀ CŨ:
-     *   Cache cả `isFollowed` vào Redis → dữ liệu của user A bị trả cho user B.
-     *   Hơn nữa, `getFollowedArtistIdsForCurrentUser` gọi DB trong mỗi request
-     *   nên cache hầu như vô dụng (Spring cache key không tính username).
-     *
-     * CÁCH FIX:
-     *   Bước 1 — Cache PHẦN TĨNH (danh sách artist + songCount) theo page/size.
-     *            Không cache isFollowed vì nó khác nhau theo từng user.
-     *   Bước 2 — Sau khi lấy từ cache, truy vấn isFollowed cho user hiện tại
-     *            bằng 1 query duy nhất (IN clause) thay vì N query.
-     *
-     * Kết quả: cache hoạt động đúng, isFollowed luôn chính xác theo user.
-     */
     public Page<ArtistResponse> getAllArtists(Pageable pageable) {
-        // Bước 1: lấy dữ liệu tĩnh từ cache (hoặc DB nếu cache miss)
         Page<ArtistResponse> cachedPage = getArtistPageCached(pageable);
 
-        // Bước 2: lấy danh sách artistId trong trang hiện tại
         List<String> artistIds = cachedPage.getContent().stream()
                 .map(ArtistResponse::getId)
                 .collect(Collectors.toList());
 
-        // Bước 3: 1 query duy nhất để biết user đang follow những ai
-        Set<String> followedIds = getFollowedArtistIdsForCurrentUser(artistIds);
+        // Truyền page info để tạo key dự đoán — không dùng hash nữa
+        Set<String> followedIds = getFollowedArtistIdsForCurrentUser(
+                artistIds, pageable.getPageNumber(), pageable.getPageSize());
 
-        // Bước 4: gán isFollowed vào response (không mutate cache vì đây là list mới)
         List<ArtistResponse> enriched = cachedPage.getContent().stream()
                 .map(r -> {
-                    // Clone để không sửa object đang nằm trong cache
                     ArtistResponse copy = r.toBuilder().build();
                     copy.setIsFollowed(followedIds.contains(r.getId()));
                     return copy;
@@ -361,10 +339,6 @@ public class ArtistService {
         return new PageImpl<>(enriched, pageable, cachedPage.getTotalElements());
     }
 
-    /**
-     * Cache PHẦN TĨNH — chỉ artist info + songCount, KHÔNG có isFollowed.
-     * Key theo page + size (không tính sort vì thường cố định).
-     */
     @Cacheable(value = "artists_page", key = "#pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<ArtistResponse> getArtistPageCached(Pageable pageable) {
         Page<ArtistRepository.ArtistWithSongCount> pageData =
@@ -372,18 +346,11 @@ public class ArtistService {
         Page<ArtistResponse> mappedPage = pageData.map(item -> {
             ArtistResponse response = artistMapper.toArtistResponse(item.getArtist());
             response.setSongCount(item.getSongCount().intValue());
-            // isFollowed để mặc định false — sẽ được gán đúng ở getAllArtists()
             return response;
         });
         return new CustomPageImpl<>(mappedPage.getContent(), pageable, mappedPage.getTotalElements());
     }
 
-    /**
-     * getArtistById — cache theo id + username.
-     *
-     * `unless = "#result == null"`: nếu artist không tồn tại (soft-deleted),
-     * không cache null → tránh lỗi IllegalArgumentException từ disableCachingNullValues.
-     */
     @Cacheable(
             value = "artist_detail",
             key   = "#id + '_' + T(org.springframework.security.core.context.SecurityContextHolder)" +
@@ -409,10 +376,6 @@ public class ArtistService {
         return response;
     }
 
-    // ─────────────────────────────────────────────
-    //  SEARCH
-    // ─────────────────────────────────────────────
-
     @Cacheable(value = "admin_artists_page", key = "#keyword + '_' + #isDeleted + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<ArtistResponse> searchArtists(String keyword, boolean isDeleted, Pageable pageable) {
         Page<ArtistRepository.ArtistWithSongCount> projections = (keyword != null && !keyword.isBlank())
@@ -428,7 +391,10 @@ public class ArtistService {
                 .map(item -> item.getArtist().getId())
                 .collect(Collectors.toList());
 
-        Set<String> followedIds = getFollowedArtistIdsForCurrentUser(artistIds);
+        // searchArtists là admin-only, ít request hơn — không cache follow status
+        // để tránh phức tạp hóa key (kết quả còn phụ thuộc vào keyword + isDeleted)
+        Set<String> followedIds = getFollowedArtistIdsForCurrentUser(
+                artistIds, pageable.getPageNumber(), pageable.getPageSize());
 
         Page<ArtistResponse> mappedPage = projections.map(projection -> {
             ArtistResponse response = artistMapper.toArtistResponse(projection.getArtist());
@@ -441,20 +407,65 @@ public class ArtistService {
         return new CustomPageImpl<>(mappedPage.getContent(), pageable, mappedPage.getTotalElements());
     }
 
-    // ─────────────────────────────────────────────
-    //  HELPER
-    // ─────────────────────────────────────────────
-
-    /**
-     * 1 query IN để lấy tất cả artistId mà user đang follow trong trang hiện tại.
-     * Tránh N query kiểu existsByUserIdAndArtistId cho từng artist.
-     */
-    public Set<String> getFollowedArtistIdsForCurrentUser(List<String> artistIds) {
+    @SuppressWarnings("unchecked")
+    public Set<String> getFollowedArtistIdsForCurrentUser(List<String> artistIds,
+                                                          int pageNumber, int pageSize) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        if (username == null || username.equals("anonymousUser")) return Set.of();
-        return userRepository.findByUsername(username)
-                .map(user -> artistFollowRepository.findFollowedArtistIds(user.getId(), artistIds))
-                .orElse(Set.of());
+        if (username == null || username.equals("anonymousUser")) return new HashSet<>();
+
+        // Tầng 1: lấy userId từ cache (tránh query bảng user mỗi request)
+        String userIdKey = USER_ID_CACHE_KEY + username;
+        String userId = null;
+        try {
+            userId = (String) redisTemplate.opsForValue().get(userIdKey);
+        } catch (Exception ignored) {}
+
+        if (userId == null) {
+            Optional<com.spotify.spotify.entity.User> userOpt = userRepository.findByUsername(username);
+            if (userOpt.isEmpty()) return new HashSet<>();
+            userId = userOpt.get().getId();
+            try {
+                redisTemplate.opsForValue().set(userIdKey, userId, 30, TimeUnit.MINUTES);
+            } catch (Exception ignored) {}
+        }
+
+        String followedKey = FOLLOWED_IDS_KEY + username + "::" + pageNumber + "_" + pageSize;
+
+        Set<String> followedIds = null;
+        try {
+            Object cached = redisTemplate.opsForValue().get(followedKey);
+            if (cached instanceof Set) {
+                followedIds = (Set<String>) cached;
+            } else if (cached instanceof List) {
+                followedIds = new HashSet<>((List<String>) cached);
+            }
+        } catch (Exception ignored) {}
+
+        if (followedIds == null) {
+            followedIds = artistFollowRepository.findFollowedArtistIds(userId, artistIds);
+            try {
+                // Lưu dưới dạng ArrayList để Jackson serialize an toàn
+                redisTemplate.opsForValue().set(followedKey, new ArrayList<>(followedIds), 5, TimeUnit.MINUTES);
+            } catch (Exception ignored) {}
+        }
+
+        return followedIds;
+    }
+
+    public void evictUserFollowCache(String username) {
+        try {
+            redisTemplate.delete(USER_ID_CACHE_KEY + username);
+            int[] commonPageSizes = {10, 13, 20};
+            List<String> keysToDelete = new ArrayList<>();
+            for (int page = 0; page < MAX_CACHED_PAGES; page++) {
+                for (int size : commonPageSizes) {
+                    keysToDelete.add(FOLLOWED_IDS_KEY + username + "::" + page + "_" + size);
+                }
+            }
+            redisTemplate.delete(keysToDelete);
+        } catch (Exception e) {
+            log.warn("[ArtistService] Can't delete cache for user {}: {}", username, e.getMessage());
+        }
     }
 
     public boolean checkIsFollowed(String artistId) {

@@ -21,4 +21,5 @@ public class PlaylistSongResponse implements Serializable {
     String audioUrl;
     Double duration;
     LocalDate addedAt;
+    Boolean isDeleted;
 }

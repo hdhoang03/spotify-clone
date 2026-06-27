@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -51,12 +52,14 @@ public class AnalyticsService {
                     .build();
         } catch (Exception e) {
             log.error("[AnalyticsService] getDashboardOverview lỗi: {}", e.getMessage(), e);
+            // Dùng new ArrayList<>() thay vì List.of() — vì List.of() tạo ImmutableCollections$EmptyList
+            // — class nội bộ JDK không Jackson deserialize được khi activateDefaultTyping được bật
             return DashboardOverviewResponse.builder()
                     .totalUsers(0)
                     .totalSongs(0)
                     .totalArtists(0)
                     .totalAlbums(0)
-                    .topSongs(List.of())
+                    .topSongs(new ArrayList<>())
                     .build();
         }
     }
@@ -102,11 +105,12 @@ public class AnalyticsService {
         } catch (Exception e) {
             log.error("[AnalyticsService] getDashBoardData lỗi (timeRange={}, year={}, month={}): {}",
                     timeRange, year, month, e.getMessage(), e);
+            // Dùng new ArrayList<>() thay vì List.of() — cùng lý do: ImmutableCollections$EmptyList
             return DashboardDataResponse.builder()
                     .totalStreams(0L)
-                    .genreData(List.of())
-                    .userGrowthData(List.of())
-                    .streamData(List.of())
+                    .genreData(new ArrayList<>())
+                    .userGrowthData(new ArrayList<>())
+                    .streamData(new ArrayList<>())
                     .build();
         }
     }
