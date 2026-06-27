@@ -24,6 +24,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -35,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -113,7 +115,7 @@ public class UserService {
         userRepository.deleteById(userId);
     }
 
-    @Cacheable(value = "admin_users_page", key = "#keyword + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
+    @Cacheable(value = "admin_users_page", key = "#keyword + '_' + #currentUserId + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     @PreAuthorize("hasRole('ADMIN')")
     public Page<UserResponse> searchUser(String keyword, String currentUserId, Pageable pageable){
         Page<UserResponse> page;
@@ -153,7 +155,7 @@ public class UserService {
     }
 
     @Transactional
-    @CacheEvict(value = "user_profile", allEntries = true)
+    @CacheEvict(value = "user_profile", key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     public Boolean togglePrivacy(){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
@@ -270,7 +272,12 @@ public class UserService {
 //    }
 
     @Transactional
-    @CacheEvict(value = "user_profile", allEntries = true)
+    @Caching(evict = {
+            // Xóa profile của mình
+            @CacheEvict(value = "user_profile", key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()"),
+            // Xóa profile của người bị follow/block
+            @CacheEvict(value = "user_profile", key = "#targetUserId")
+    })
     public boolean toggleFollowUser(String targetUserId){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User currentUser = userRepository.findByUsername(username)
@@ -329,7 +336,12 @@ public class UserService {
     }
 
     @Transactional
-    @CacheEvict(value = "user_profile", allEntries = true)
+    @Caching(evict = {
+            // Xóa profile của mình
+            @CacheEvict(value = "user_profile", key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()"),
+            // Xóa profile của người bị follow/block
+            @CacheEvict(value = "user_profile", key = "#targetUserId")
+    })
     public boolean toggleBlockUser(String targetUserId){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User currentUser = userRepository.findByUsername(username)
@@ -390,6 +402,7 @@ public class UserService {
                         .build());
     }
 
+    @Transactional
     public boolean isCurrentlyPremium(User user){
         if (!user.getIsPremium()){
             return false;
@@ -408,11 +421,33 @@ public class UserService {
         return false;
     }
 
+    @Cacheable(value = "premium_status", key = "#username")
     public boolean checkPremiumByUsername(String username){
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         return isCurrentlyPremium(user);
+    }
+
+    @Cacheable(value = "premium_details", key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
+    @Transactional
+    public PremiumPlanResponse getPremiumPlan(){
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        if (!isCurrentlyPremium(user)){
+            return PremiumPlanResponse.builder()
+                    .premiumExpiryDate(null)
+                    .daysRemaining(0L)
+                    .build();
+        }
+
+        long daysLeft = ChronoUnit.DAYS.between(LocalDateTime.now(), user.getPremiumExpiryDate());
+        return PremiumPlanResponse.builder()
+                .premiumExpiryDate(user.getPremiumExpiryDate())
+                .daysRemaining(Math.max(0, daysLeft))//đảm bảo không âm
+                .build();
     }
 
     private String getPublicIdFromUrl(String url){
@@ -473,7 +508,7 @@ public class UserService {
         }
     }
 
-    @CacheEvict(value = {"user_profile", "my_info"}, allEntries = true)
+    @CacheEvict(value = {"user_profile", "my_info"}, key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     @Transactional
     public UserProfileResponse updateMyProfile(UserProfileUpdateRequest request){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();

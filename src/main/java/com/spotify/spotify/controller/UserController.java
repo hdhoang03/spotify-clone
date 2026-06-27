@@ -197,6 +197,15 @@ public class UserController {
                 .build();
     }
 
+    @GetMapping("/my-premium/plan-details")
+    ApiResponse<PremiumPlanResponse> getMyPremiumPlanDetails(){
+        return ApiResponse.<PremiumPlanResponse>builder()
+                .code(1000)
+                .message("Get premium plan successfully.")
+                .result(userService.getPremiumPlan())
+                .build();
+    }
+
     @PatchMapping("/profile/language")
     ApiResponse<Void> updatePreferredLanguage(@RequestBody LanguageUpdateRequest request){
         userService.updatePreferredLanguage(request);
