@@ -96,6 +96,7 @@ public class NotificationService {
         notificationRepository.markAllAsRead(username);
     }
 
+    @CacheEvict(value = "unread_notification_count", key = "T(org.springframework.security.core.context.SecurityContextHolder).getContext().getAuthentication().getName()")
     @Transactional
     public void deleteNotification(String id){
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
