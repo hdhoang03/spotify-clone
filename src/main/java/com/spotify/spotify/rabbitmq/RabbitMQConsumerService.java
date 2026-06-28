@@ -18,6 +18,8 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +37,7 @@ public class RabbitMQConsumerService {
     NotificationRepository notificationRepository;
     SseService sseService;
     UserRepository userRepository;
+    CacheManager cacheManager;
 
     @Transactional
     @RabbitListener(queues = RabbitMQConfig.PLAY_COUNT_QUEUE)
@@ -127,5 +130,20 @@ public class RabbitMQConsumerService {
 
         notification = notificationRepository.save(notification);
         payload.setId(notification.getId());
+
+        // Evict the unread count cache for this recipient
+        evictUnreadCountCache(recipient.getUsername());
+    }
+
+    private void evictUnreadCountCache(String username) {
+        try {
+            Cache cache = cacheManager.getCache("unread_notification_count");
+            if (cache != null) {
+                cache.evict(username);
+                log.info("Evicted unread_notification_count cache for user: {}", username);
+            }
+        } catch (Exception e) {
+            log.error("Failed to evict unread_notification_count cache for user {}: ", username, e);
+        }
     }
 }

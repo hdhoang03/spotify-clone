@@ -72,6 +72,12 @@ public class Song {
     @OneToMany(mappedBy = "song", cascade = CascadeType.REMOVE)//khi xóa bài hát tự động xóa luôn like và stream 🌟
     Set<SongStream> streams = new HashSet<>();
 
+    @OneToOne(mappedBy = "song", cascade = CascadeType.REMOVE)
+    Lyrics lyrics;
+
+    @OneToMany(mappedBy = "song", cascade = CascadeType.REMOVE)
+    Set<PlaylistSong> playlistSongs = new HashSet<>();
+
     @PrePersist
     void onCreate(){
         this.createdAt = LocalDateTime.now();

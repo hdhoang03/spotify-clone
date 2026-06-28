@@ -28,6 +28,8 @@ public interface SongMapper {
     @Mapping(target = "streams", ignore = true)
     @Mapping(target = "likes", ignore = true)
     @Mapping(target = "uploadedBy", ignore = true)
+    @Mapping(target = "lyrics", ignore = true)
+    @Mapping(target = "playlistSongs", ignore = true)
     Song toSong(SongRequest request);
 
     //dot anotation "album.name" có khả năng null pointer nên dùng custom method
@@ -57,6 +59,8 @@ public interface SongMapper {
     @Mapping(target = "category", ignore = true)
     @Mapping(target = "likeCount", ignore = true)
     @Mapping(target = "playCount", ignore = true)
+    @Mapping(target = "lyrics", ignore = true)
+    @Mapping(target = "playlistSongs", ignore = true)
     void updateSong(@MappingTarget Song song, SongRequest request);
 
     default String map(Artist artist){
