@@ -29,7 +29,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import jakarta.persistence.criteria.JoinType;
+import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -313,5 +315,34 @@ public class SongService {
         Page<SongResponse> page = songRepository.findAll(spec, pageable)
                 .map(songMapper::toSongResponse);
         return new CustomPageImpl<>(page.getContent(), pageable, page.getTotalElements());
+    }
+
+    public byte[] downloadSong(String id){
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        if (!user.getIsPremium()){
+            throw new AppException(ErrorCode.UNAUTHORIZED_PREMIUM_ONLY);
+        }
+
+        Song song = songRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.SONG_NOT_FOUND));
+
+        if (song.getAudioUrl() != null && !song.isDeleted()){
+            try {
+                RestTemplate template = new RestTemplate();
+                byte[] bytes = template.getForObject(song.getAudioUrl(), byte[].class);
+
+                if (bytes == null){
+                    throw new AppException(ErrorCode.SONG_NOT_FOUND);
+                }
+                return bytes;
+            } catch (Exception e) {
+                throw new AppException(ErrorCode.DOWNLOAD_FAILED);
+            }
+        } else {
+            throw new AppException(ErrorCode.SONG_NOT_FOUND);
+        }
     }
 }

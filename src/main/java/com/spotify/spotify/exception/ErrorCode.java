@@ -49,6 +49,8 @@ public enum ErrorCode {
     LYRICS_NOT_FOUND(1033, "Lyrics not found", HttpStatus.NOT_FOUND),
     ORDER_CODE_NOT_FOUND(1034, "Order code not found", HttpStatus.NOT_FOUND),
     INVALID_CAPTCHA(1035, "Invalid captcha", HttpStatus.BAD_REQUEST),
+    UNAUTHORIZED_PREMIUM_ONLY(1036, "unauthorized premium only", HttpStatus.BAD_REQUEST),
+    DOWNLOAD_FAILED(1036, "Download filed", HttpStatus.BAD_REQUEST),
     ;
     int code;
     String message;

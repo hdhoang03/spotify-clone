@@ -41,11 +41,11 @@ public class EmailService {
     String apiKey;
 
     @NonFinal
-    @Value("${MAIL_FROM:hodanghoang2003@gmail.com}")
+    @Value("${MAIL_FROM:supportspringtunes@gmail.com}")
     String fromEmail;
 
     @NonFinal
-    @Value("${brevo.sender-name:SpringTunes Service}")
+    @Value("${brevo.sender-name:Springtunes Service}")
     String fromName;
 
 //    @Async //Gửi mail chạy ngầm không bị block api
@@ -55,7 +55,7 @@ public class EmailService {
 //            Context context = new Context();
 //            context.setVariables(variables);
 //
-//            //Render HTML -> String
+//            //Render HTML -> Stringg
 //            String htmlBody = templateEngine.process(templateName, context);
 //
 //            //Create an email
