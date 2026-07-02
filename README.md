@@ -1,12 +1,13 @@
-# Spotify Clone Backend 🎵
+# Spotify Clone Backend
 
 A comprehensive, high-performance backend for a Spotify clone application built with **Java 21** and **Spring Boot 3.4.6**. It provides a robust RESTful API for music streaming, user management, playlist creation, real-time notifications, caching, and social features.
 
 ---
 
-## 📖 System Architecture
+## System Architecture
 
 The backend is built using a modern event-driven microservices-friendly architecture, leveraging several high-performance services to ensure high availability and responsiveness.
+
 
 ```mermaid
 graph TD
@@ -30,7 +31,7 @@ graph TD
 
 ---
 
-## ✨ Features
+## Features
 
 ### 1. Identity & Security
 - **Secure Authentication**: JWT-based stateless authentication with support for refresh tokens and token blacklisting/invalidation.
@@ -40,6 +41,7 @@ graph TD
 
 ### 2. Music Catalog & Social Media
 - **Core Catalog**: Complete CRUD management for Songs, Albums, Artists, Playlists, Categories, and Lyrics.
+- **Global & Playlist Search**: Advanced search endpoints for discovering global content and filtering specific songs within a playlist.
 - **Social Interaction**: Like/unlike songs, follow/unfollow artists and users, customize public/private profiles, and manage user blocklists.
 - **Cloud Media**: Direct streaming and upload of audio files and images hosted on **Cloudinary CDN**.
 
@@ -71,7 +73,7 @@ Uses **Brevo (formerly Sendinblue) Transactional Emails API** via HTTP POST.
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Language**: Java 21
 - **Framework**: Spring Boot 3.4.6
@@ -85,7 +87,7 @@ Uses **Brevo (formerly Sendinblue) Transactional Emails API** via HTTP POST.
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```text
 src/main/java/com/spotify/spotify
@@ -103,7 +105,7 @@ src/main/java/com/spotify/spotify
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 Make sure you have the following installed on your machine:
@@ -166,7 +168,7 @@ The application will run at: `http://localhost:8080/spotify`.
 
 ---
 
-## ⚙️ Production Configurations
+## Production Configurations
 For production environments, the system runs with the `prod` profile, activating `application-prod.yaml`. 
 Ensure you define `SPRING_PROFILES_ACTIVE=prod` in your environment. This will connect to:
 - Aiven Cloud MySQL
