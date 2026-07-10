@@ -61,8 +61,9 @@ public class UserService {
 //    CaptchaService captchaService;
 
     @CacheEvict(value = "admin_users_page", allEntries = true)
-    @PreAuthorize("hasRole('ADMIN')")
+//    @PreAuthorize("hasRole('ADMIN')")
     public UserResponse createUser(UserCreationRequest request){
+        log.info("User creation request received");
 //        if (!captchaService.verifyCaptcha(request.getCaptchaToken())){
 //            throw new AppException(ErrorCode.INVALID_CAPTCHA);
 //        }
