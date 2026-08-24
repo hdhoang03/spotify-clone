@@ -346,7 +346,7 @@ public class AuthenticationService {
                 : signedJWT.getJWTClaimsSet().getExpirationTime();
 
         var verified = signedJWT.verify(verifier);
-        if (!verified && expiryTime.after(new Date()))
+        if (!verified || !expiryTime.after(new Date()))
             throw new AppException(ErrorCode.UNAUTHENTICATED);
 
         //Kiểm tra blacklist token trong redis

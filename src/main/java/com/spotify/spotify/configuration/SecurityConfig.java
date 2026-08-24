@@ -33,7 +33,7 @@ public class SecurityConfig {
 //    @Autowired
 //    private UserRepository userRepository;
 
-    private final String[] PUBLIC_ENDPOINTS = {"/user/**", "/user",
+    private final String[] PUBLIC_ENDPOINTS = {
             "/auth/token", "/auth/introspect", "/auth/logout", "/auth/refresh", "/auth/register", "/auth/verify", "/auth/forgot-password", "/auth/reset-password", "/auth/resend-otp",
             "/categories","/categories/**", "/categories/search",
             "/albums", "/albums/**", "/albums/all",
@@ -46,7 +46,10 @@ public class SecurityConfig {
             "/stream/**",
             "/auth/outbound/authentication",
             "/lyrics/{songId}/get",
-            "/api/payment/webhook"
+            "/api/payment/webhook",
+            "/user/{userId}/profile",
+            "/user/{userId}/followers",
+            "/user/{userId}/following-users"
     };
 
     @Bean

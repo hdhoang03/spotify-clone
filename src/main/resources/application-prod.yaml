@@ -107,4 +107,4 @@ outbound:
 
 google:
   recaptcha:
-    secret: ${RECAPTCHA_SECRET_KEY}
+    secret: ${RECAPTCHA_SECRET_KEY:6LcrihotAAAAAAidYU_m6Dbhb2JG-KFBlGtCBKPj}
