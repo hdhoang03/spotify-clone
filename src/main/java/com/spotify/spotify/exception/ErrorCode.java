@@ -50,7 +50,8 @@ public enum ErrorCode {
     ORDER_CODE_NOT_FOUND(1034, "Order code not found", HttpStatus.NOT_FOUND),
     INVALID_CAPTCHA(1035, "Invalid captcha", HttpStatus.BAD_REQUEST),
     UNAUTHORIZED_PREMIUM_ONLY(1036, "unauthorized premium only", HttpStatus.BAD_REQUEST),
-    DOWNLOAD_FAILED(1036, "Download filed", HttpStatus.BAD_REQUEST),
+    DOWNLOAD_FAILED(1037, "Download file fail", HttpStatus.INTERNAL_SERVER_ERROR),
+    TOO_MANY_REQUESTS(1038, "Too many login attempts. Please try again in 1 minute.", HttpStatus.TOO_MANY_REQUESTS),
     ;
     int code;
     String message;
