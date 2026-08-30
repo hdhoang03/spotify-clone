@@ -12,9 +12,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 
 /**
  * Filter đọc JWT từ httpOnly cookie "access_token" và inject vào
@@ -22,7 +22,8 @@ import java.util.Map;
  *
  * <p>Thứ tự ưu tiên:
  * <ol>
- *   <li>Nếu request đã có header "Authorization" → bỏ qua (ưu tiên cho SSE / query param).</li>
+ *   <li>Nếu request là public path → bỏ qua, KHÔNG inject token (tránh 401 khi cookie hết hạn).</li>
+ *   <li>Nếu request đã có header "Authorization" hợp lệ → bỏ qua (ưu tiên SSE / query param).</li>
  *   <li>Nếu có cookie "access_token" → inject "Authorization: Bearer {token}".</li>
  *   <li>Không có gì → để chain xử lý (sẽ bị 401 nếu endpoint cần auth).</li>
  * </ol>
@@ -30,6 +31,12 @@ import java.util.Map;
  * <p>Tại sao inject vào header thay vì đọc SecurityContext trực tiếp?
  * → Tái dụng toàn bộ pipeline JWT validation của Spring Security OAuth2 Resource Server
  *   (CustomJwtDecoder, JwtAuthenticationConverter, blacklist check…) mà không cần viết lại.
+ *
+ * <p>Tại sao cần PUBLIC_PATHS?
+ * → Nếu cookie access_token tồn tại nhưng hết hạn, và ta vẫn inject vào header cho
+ *   public endpoint, thì CustomJwtDecoder sẽ gọi introspect() → isValid=false →
+ *   JwtException → JwtAuthenticationEntryPoint trả 401, dù endpoint đã được permitAll().
+ *   Bằng cách skip inject cho public path, request đi thẳng qua permitAll mà không bị chặn.
  */
 @Component
 public class CookieTokenFilter extends OncePerRequestFilter {
@@ -38,13 +45,47 @@ public class CookieTokenFilter extends OncePerRequestFilter {
     private static final String AUTH_HEADER  = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
 
+    /**
+     * Các URI path public — bỏ qua inject cookie token.
+     * Sử dụng String.contains() để match cả có/không có context-path prefix.
+     */
+    private static final List<String> PUBLIC_PATHS = List.of(
+            "/auth/token", "/auth/register", "/auth/verify",
+            "/auth/forgot-password", "/auth/reset-password",
+            "/auth/resend-otp", "/auth/outbound/authentication",
+            "/auth/refresh", "/auth/logout", "/auth/introspect",
+            "/song/allSongs", "/song/search",
+            "/like/top",
+            "/stream/top", "/stream/count/", "/stream/range",
+            "/albums/all",
+            "/artist/all",
+            "/categories",
+            "/search", "/advanced-search",
+            "/lyrics/",
+            "/api/payment/webhook",
+            "/api/test-kafka"
+    );
+
+    private boolean isPublicPath(String requestURI) {
+        return PUBLIC_PATHS.stream().anyMatch(requestURI::contains);
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        // Bỏ qua các endpoint cần xử lý token thủ công (kể cả khi token đã hết hạn)
         String requestURI = request.getRequestURI();
+
+        // Bỏ qua các endpoint auth thủ công (kể cả khi token đã hết hạn)
         if (requestURI.endsWith("/auth/refresh") || requestURI.endsWith("/auth/logout") || requestURI.endsWith("/auth/token")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // ✅ Public endpoint: KHÔNG inject cookie vào header.
+        // Nếu inject cookie hết hạn → CustomJwtDecoder throw JwtException → 401 dù permitAll.
+        // Guest (không có cookie) cũng đi qua đây bình thường.
+        if (isPublicPath(requestURI)) {
             filterChain.doFilter(request, response);
             return;
         }
