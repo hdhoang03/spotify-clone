@@ -1,89 +1,99 @@
 # Spotify Clone Backend
 
-A comprehensive, high-performance backend for a Spotify clone application built with **Java 21** and **Spring Boot 3.4.6**. It provides a robust RESTful API for music streaming, user management, playlist creation, real-time notifications, caching, and social features.
+A high-performance RESTful API backend for a Spotify clone application built with **Java 21** and **Spring Boot 3.4.6**. The system delivers scalable music streaming, robust authentication with HttpOnly cookie handling, IP-based rate limiting, real-time Server-Sent Events (SSE), event-driven background processing, and distributed caching.
 
 ---
 
 ## System Architecture
 
-The backend is built using a modern event-driven microservices-friendly architecture, leveraging several high-performance services to ensure high availability and responsiveness.
-
+The backend follows an event-driven architecture designed to decouple heavy workloads from synchronous HTTP worker threads while guaranteeing high security and fast responses.
 
 ```mermaid
 graph TD
-    Client[Client Application] -->|HTTP REST| API[Spring Boot API Server]
+    Client[Client Application] -->|HTTP REST + HttpOnly Cookies| API[Spring Boot API Server]
     Client -->|SSE Stream| SSE[SSE Controller]
     
-    API -->|Read/Write| DB[(MySQL Database)]
-    API -->|Cache / Session| Redis[(Redis Cache)]
+    API -->|Rate Limit Verification| RateLimiter[Bucket4j Rate Limiter]
+    API -->|Authentication Filter| CookieFilter[CookieTokenFilter]
+    
+    API -->|Read / Write| DB[(MySQL Database)]
+    API -->|Cache Management| Redis[(Redis Cache)]
     API -->|Publish Events| RabbitMQ{RabbitMQ Broker}
     
     RabbitMQ -->|Play Count Event| Consumer[RabbitMQ Consumer]
     RabbitMQ -->|Notification Event| Consumer
     
-    Consumer -->|Update Plays| DB
+    Consumer -->|Update Stream Counts| DB
     Consumer -->|Send Email| Brevo[Brevo REST API]
-    Consumer -->|Push Live| SSE
+    Consumer -->|Push Live Alert| SSE
     
-    API -->|Media Storage| Cloudinary[Cloudinary CDN]
-    API -->|Payments| PayOS[PayOS Gateway]
+    API -->|Media Hosting| Cloudinary[Cloudinary CDN]
+    API -->|Payment Links| PayOS[PayOS Gateway]
 ```
 
 ---
 
-## Features
+## Core Features
 
-### 1. Identity & Security
-- **Secure Authentication**: JWT-based stateless authentication with support for refresh tokens and token blacklisting/invalidation.
-- **Social Login**: Integrated Google OAuth2 flow returning direct secure JWTs.
-- **Bot Protection**: Google reCAPTCHA v3 validation on user signup.
-- **Role-Based Access Control**: Strict access levels for `Guest`, `User`, `Artist`, and `Admin`.
+### 1. Identity, Security & HttpOnly Cookie Authentication
+- **HttpOnly Cookie Session Management**: Issues JWT access tokens encapsulated within `HttpOnly`, `Secure`, `SameSite=None` cookies (`access_token`). This completely isolates tokens from browser JavaScript context, mitigating Cross-Site Scripting (XSS) risks.
+- **Transparent Filter Pipeline (`CookieTokenFilter`)**: Intercepts incoming requests, extracts the JWT from `access_token` cookies, and wraps the request header with `Authorization: Bearer <token>`. This reuses Spring Security's native OAuth2 Resource Server validation pipeline.
+- **Public Endpoint Bypass**: Automatically skips cookie injection on public routes (such as public song/album endpoints and auth endpoints). This prevents expired cookies from triggering false `401 Unauthorized` responses on public resources.
+- **Token Invalidation & Cookie Revocation**: Supports explicit token blacklisting on logout while simultaneously clearing client-side cookies using `Max-Age=0` HTTP headers.
+- **Social Login & Protection**: Google OAuth2 authentication flow with automatic cookie issuance, complemented by Google reCAPTCHA v3 verification during account registration.
+- **Role-Based Access Control (RBAC)**: Fine-grained permissions enforced across `Guest`, `User`, `Artist`, and `Admin` roles.
 
-### 2. Music Catalog & Social Media
-- **Core Catalog**: Complete CRUD management for Songs, Albums, Artists, Playlists, Categories, and Lyrics.
-- **Global & Playlist Search**: Advanced search endpoints for discovering global content and filtering specific songs within a playlist.
-- **Social Interaction**: Like/unlike songs, follow/unfollow artists and users, customize public/private profiles, and manage user blocklists.
-- **Cloud Media**: Direct streaming and upload of audio files and images hosted on **Cloudinary CDN**.
+### 2. Rate Limiting & Threat Protection
+- **Token Bucket Algorithm (Bucket4j)**: Integrated `RateLimitService` enforces rate limits using in-memory token buckets (`bucket4j-core`).
+- **Endpoint Protection**: Guards sensitive endpoints (such as `/auth/token`) against brute-force attacks and credential stuffing by capping requests at 10 requests per minute per IP address.
+- **Reverse Proxy IP Resolution**: Resolves client IP addresses across proxies using `X-Forwarded-For` header analysis.
+- **Automated Bucket Eviction**: Scheduled background tasks (`@Scheduled`) periodically prune inactive IP buckets every 10 minutes to eliminate memory leak vectors.
+- **Standardized Rate Limit Exceptions**: Exceeding rate quotas immediately returns HTTP 429 (`TOO_MANY_REQUESTS`).
 
-### 3. Event-Driven System (RabbitMQ)
-The system uses **RabbitMQ** (via `spring-boot-starter-amqp`) as its message broker to process resource-intensive tasks asynchronously, decoupled from the HTTP thread pool:
-- **Play Count Tracking**: Plays are published to `play_count_queue` and batched to prevent database locks.
-- **Notification Routing**: System events trigger notifications pushed to `notification_queue`.
-- **SSE Routing**: Live events (like messages or follows) go to `sse_queue` to be pushed directly to users.
-> [!NOTE]
-> *Legacy code for Apache Kafka exists within the project (`com.spotify.spotify.kafka`), but has been deactivated in favor of RabbitMQ for simplified and more reliable messaging.*
+### 3. Music Catalog & Social Media
+- **Catalog Management**: CRUD operations for Songs, Albums, Artists, Playlists, Categories, and Sync Lyrics.
+- **Search Capabilities**: Global multi-entity search and scoped intra-playlist filtering.
+- **Social Interactions**: User like/unlike tracking, user/artist following, public/private profile controls, and user blocklist management.
+- **Cloud Media Delivery**: Audio files and cover images stored and served via Cloudinary CDN.
 
-### 4. Advanced Caching (Redis)
-A custom **Redis Cache Manager** is implemented with specific TTL (Time-To-Live) configs:
-- **Specific Cache Rules**: 10-minute TTL for admin dashboards and 5-minute TTL for artist profiles, album views, and page listings.
-- **Jackson Polymorphic Serialization**: Custom `ObjectMapper` configuration utilizing polymorphic typing (`ObjectMapper.DefaultTyping.NON_FINAL`) to support correct deserialization of complex objects (such as paginated items and custom entities) from cache without casting exceptions.
+### 4. Event-Driven Messaging (RabbitMQ)
+Asynchronous task delegation powered by RabbitMQ (`spring-boot-starter-amqp`) decouples computational tasks from synchronous request cycles:
+- **Play Count Aggregation**: Asynchronous processing via `play_count_queue` to prevent database locks under high concurrent streams.
+- **Notification Queue**: Routing system events to `notification_queue` for processing.
+- **Real-Time SSE Routing**: Instant user events pushed through `sse_queue` directly to target client streams.
 
-### 5. Server-Sent Events (SSE)
-Real-time notification delivery is powered by **SSE (Server-Sent Events)** through `SseEmitter`. Clients subscribe to `/sse/subscribe` using their JWT, allowing the backend to stream notifications and system updates directly without polling.
+### 5. Advanced Caching (Redis)
+Custom Redis configuration engineered for high performance:
+- **Targeted TTL Policies**: 10-minute TTL for administrative dashboard summaries; 5-minute TTL for artist profiles, album views, and public catalog listings.
+- **Polymorphic Deserialization**: Configured Jackson `ObjectMapper` with polymorphic typing (`DefaultTyping.NON_FINAL`) to handle generic paginated responses and complex JPA entities without type erasure errors.
 
-### 6. Subscriptions & Payments
-Integrated with the **PayOS Payment Gateway** for Premium upgrades:
-- Handles pay links creation and secure webhook validation.
-- An automated cron scheduler (`PremiumScheduler`) runs daily to automatically deactivate expired Premium accounts.
+### 6. Server-Sent Events (SSE)
+Real-time push notifications delivered over HTTP via `SseEmitter`. Authenticated subscribers connect to `/sse/subscribe` to receive real-time alerts without short or long polling overhead.
 
-### 7. Email Notifications
-Uses **Brevo (formerly Sendinblue) Transactional Emails API** via HTTP POST. 
-> [!IMPORTANT]
-> *Traditional JavaMail SMTP is replaced by Brevo's REST API endpoint (`https://api.brevo.com/v3/smtp/email`) to bypass network SMTP port blocking issues common in cloud environments (like Railway).*
+### 7. Subscriptions & Payment Integration
+PayOS payment gateway integration for managing Premium subscription plans:
+- Secure payment link generation and signature verification for webhooks.
+- Automated daily background scheduler (`PremiumScheduler`) to revoke expired subscription privileges.
+
+### 8. Transactional Email Services
+Integration with Brevo (formerly Sendinblue) Transactional REST API for OTP verification and password reset emails, bypassing outbound SMTP port blocking restrictions in cloud environments.
 
 ---
 
 ## Tech Stack
 
-- **Language**: Java 21
-- **Framework**: Spring Boot 3.4.6
-- **Database**: MySQL 8.x, Hibernate / JPA
-- **Caching**: Redis (Lettuce client)
-- **Message Broker**: RabbitMQ
-- **Media Provider**: Cloudinary
-- **DTO Mapping**: MapStruct 1.5.5
-- **Payment Gateway**: PayOS
-- **Security**: Spring Security, OAuth2 Resource Server, JWT
+| Domain | Technology |
+| :--- | :--- |
+| **Language & Framework** | Java 21, Spring Boot 3.4.6 |
+| **Security & Auth** | Spring Security, OAuth2 Resource Server, JWT, HttpOnly Cookies, Google reCAPTCHA v3 |
+| **Rate Limiting** | Bucket4j 8.10.1 |
+| **Database & Persistence** | MySQL 8.x, Hibernate, Spring Data JPA |
+| **Caching** | Redis (Lettuce Client, Jackson Polymorphic Typing) |
+| **Message Broker** | RabbitMQ (Spring AMQP) |
+| **Storage & CDN** | Cloudinary |
+| **Payment Gateway** | PayOS SDK |
+| **Email Service** | Brevo Transactional REST API |
+| **Object Mapping** | MapStruct 1.5.5 |
 
 ---
 
@@ -91,16 +101,16 @@ Uses **Brevo (formerly Sendinblue) Transactional Emails API** via HTTP POST.
 
 ```text
 src/main/java/com/spotify/spotify
-├── configuration   # Security, Cache, RabbitMQ, Cloudinary, RestTemplate, Lyrics converters
-├── controller      # RESTful API Endpoints (Auth, Music, Playlists, SSE, Orders, etc.)
-├── dto             # Request/Response DTOs & Event schemas
+├── configuration   # Security, CookieTokenFilter, Cache, RabbitMQ, Cloudinary, RestTemplate
+├── controller      # REST API Controllers (Auth, Music, Playlists, SSE, Payment, etc.)
+├── dto             # Data Transfer Objects & Event Payload Schemas
 ├── entity          # JPA Entities (User, Role, Song, Album, Playlist, Like, Stream, Notification)
-├── exception       # Global Exception Handler (@ControllerAdvice) and ErrorCodes
-├── kafka           # [Legacy] Deactivated Kafka Producers and Consumers
-├── mapper          # MapStruct Mapper Interfaces (UserMapper, SongMapper, etc.)
-├── rabbitmq        # Active RabbitMQ Consumers and message processing handlers
-├── repository      # Spring Data JPA Repositories (with custom query hooks)
-└── service         # Core Business Logic (Auth, Email, Music, Payment, SSE, etc.)
+├── exception       # Global Exception Handling (@ControllerAdvice, ErrorCodes)
+├── kafka           # [Legacy] Deactivated Kafka configuration
+├── mapper          # MapStruct Converters (UserMapper, SongMapper, AlbumMapper)
+├── rabbitmq        # Active RabbitMQ Event Consumers and Handlers
+├── repository      # Spring Data JPA Repositories
+└── service         # Core Business Services (Auth, RateLimit, Email, Music, Payment, SSE)
 ```
 
 ---
@@ -108,25 +118,24 @@ src/main/java/com/spotify/spotify
 ## Getting Started
 
 ### Prerequisites
-Make sure you have the following installed on your machine:
 - **Java 21** or higher
 - **Maven 3.8+**
-- **Docker & Docker Compose** (Highly recommended for database/cache infrastructure)
+- **Docker & Docker Compose**
 
-### Step 1: Run Infrastructure using Docker Compose
-The easiest way to run the database, cache, and message broker locally is using the provided `docker-compose.yml`:
+### Step 1: Launch Infrastructure Services
+Start the required local services (MySQL, Redis, RabbitMQ) using Docker Compose:
 ```bash
 docker-compose up -d
 ```
-This spins up:
-- **MySQL** on port `3306` (creates a database named `spotify`)
-- **Redis** on port `6379`
-- **RabbitMQ** on port `5672` (main queue) and port `15672` (Management Dashboard)
+Service ports:
+- **MySQL**: `3306` (Database: `spotify`)
+- **Redis**: `6379`
+- **RabbitMQ**: `5672` (AMQP Broker), `15672` (Management Dashboard)
 
-### Step 2: Configure Environment Variables
-Create a `.env` file in the `spotify` root directory (same folder as `pom.xml`) and specify the following keys:
+### Step 2: Environment Configuration
+Create a `.env` file in the project root directory (alongside `pom.xml`):
 ```env
-# Database Credentials
+# Database Configuration
 DB_NAME=spotify
 DB_USERNAME=root
 DB_PASSWORD=root
@@ -139,11 +148,11 @@ RABBITMQ_PASSWORD=guest
 BREVO_API_KEY=your_brevo_api_key
 MAIL_FROM=your_sender_email@domain.com
 
-# Cloudinary
+# Cloudinary Storage
 KEY_CLOUD=your_cloudinary_api_key
 SECRET_CLOUD=your_cloudinary_api_secret
 
-# PayOS (Subscription Payment)
+# PayOS Payment Gateway
 PAYOS_CLIENT_ID=your_payos_client_id
 PAYOS_API_KEY=your_payos_api_key
 PAYOS_CHECKSUM_KEY=your_payos_checksum_key
@@ -155,22 +164,23 @@ RECAPTCHA_SECRET_KEY=your_recaptcha_secret_key
 FRONTEND_PROD_URL=http://localhost:5173/oauth2/callback
 ```
 
-### Step 3: Run the Application
-Clean, package, and start the application using the Maven wrapper:
+### Step 3: Build and Run
+Compile and run the Spring Boot application using Maven Wrapper:
 ```bash
-# Compile and package jar
+# Package application
 ./mvnw clean package -DskipTests
 
-# Start Spring Boot
+# Start server
 ./mvnw spring-boot:run
 ```
-The application will run at: `http://localhost:8080/spotify`.
+The server will run at: `http://localhost:8080/spotify`.
 
 ---
 
-## Production Configurations
-For production environments, the system runs with the `prod` profile, activating `application-prod.yaml`. 
-Ensure you define `SPRING_PROFILES_ACTIVE=prod` in your environment. This will connect to:
-- Aiven Cloud MySQL
-- Upstash Redis (with SSL/TLS enabled)
-- CloudAMQP RabbitMQ
+## Production Deployment
+
+For production environments, activate the `prod` profile by setting the environment variable `SPRING_PROFILES_ACTIVE=prod`. This activates `application-prod.yaml` configured for:
+- Managed MySQL (e.g., Aiven)
+- Managed Redis with TLS/SSL (e.g., Upstash)
+- Cloud RabbitMQ (e.g., CloudAMQP)
+
