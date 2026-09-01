@@ -46,28 +46,63 @@ public class CookieTokenFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
 
     /**
-     * Các URI path public — bỏ qua inject cookie token.
-     * Sử dụng String.contains() để match cả có/không có context-path prefix.
+     * Path luôn public bất kể method (auth, webhook…).
+     * Dùng String.contains() để match cả có/không có context-path prefix.
      */
-    private static final List<String> PUBLIC_PATHS = List.of(
+    private static final List<String> ALWAYS_PUBLIC_PATHS = List.of(
             "/auth/token", "/auth/register", "/auth/verify",
             "/auth/forgot-password", "/auth/reset-password",
             "/auth/resend-otp", "/auth/outbound/authentication",
             "/auth/refresh", "/auth/logout", "/auth/introspect",
+            "/api/payment/webhook",
+            "/api/test-kafka"
+    );
+
+    /**
+     * Path chỉ public với GET — POST/PUT/DELETE tới cùng base path cần auth.
+     * Ví dụ: GET /categories (list) là public, nhưng POST /categories/create cần ADMIN.
+     * Ví dụ: GET /lyrics/{id}/get là public, nhưng POST /lyrics/{id} cần ADMIN.
+     *
+     * ⚠️ Vì dùng String.contains(), pattern phải đủ cụ thể để tránh match nhầm.
+     */
+    private static final List<String> GET_ONLY_PUBLIC_PATHS = List.of(
             "/song/allSongs", "/song/search",
             "/like/top",
             "/stream/top", "/stream/count/", "/stream/range",
             "/albums/all",
             "/artist/all",
             "/categories",
-            "/search", "/advanced-search",
-            "/lyrics/",
-            "/api/payment/webhook",
-            "/api/test-kafka"
+            "/search", "/advanced-search"
     );
 
-    private boolean isPublicPath(String requestURI) {
-        return PUBLIC_PATHS.stream().anyMatch(requestURI::contains);
+    /**
+     * Suffix path chỉ public với GET (dùng endsWith thay vì contains).
+     * Ví dụ: GET /lyrics/{songId}/get — public, nhưng POST /lyrics/{songId} — admin.
+     */
+    private static final List<String> GET_ONLY_SUFFIX_PATHS = List.of(
+            "/get"
+    );
+
+    private boolean isPublicPath(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        String method = request.getMethod();
+
+        // 1. Path luôn public (auth, webhook) — bỏ qua inject token
+        if (ALWAYS_PUBLIC_PATHS.stream().anyMatch(uri::contains)) {
+            return true;
+        }
+
+        // 2. Path chỉ public với GET — admin mutation cần token
+        if ("GET".equalsIgnoreCase(method)) {
+            if (GET_ONLY_PUBLIC_PATHS.stream().anyMatch(uri::contains)) {
+                return true;
+            }
+            if (GET_ONLY_SUFFIX_PATHS.stream().anyMatch(uri::endsWith)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     @Override
@@ -85,7 +120,7 @@ public class CookieTokenFilter extends OncePerRequestFilter {
         // ✅ Public endpoint: KHÔNG inject cookie vào header.
         // Nếu inject cookie hết hạn → CustomJwtDecoder throw JwtException → 401 dù permitAll.
         // Guest (không có cookie) cũng đi qua đây bình thường.
-        if (isPublicPath(requestURI)) {
+        if (isPublicPath(request)) {
             filterChain.doFilter(request, response);
             return;
         }
