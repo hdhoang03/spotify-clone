@@ -118,6 +118,7 @@ public class SecurityConfig {
         // Cấu hình cụ thể origin để bảo mật hơn thay vì dùng "*"
         corsConfiguration.setAllowedOrigins(List.of(
                 "http://localhost:5173",
+                "http://localhost:5174",
                 "https://spotify-clone-fe-chi.vercel.app"
         ));
         corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
