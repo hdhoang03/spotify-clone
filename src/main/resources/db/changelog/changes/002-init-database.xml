@@ -1,0 +1,412 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.15.xsd">
+
+    <!-- 1. Bảng Permission -->
+    <changeSet id="create-permission" author="hoang">
+        <createTable tableName="permission">
+            <column name="name" type="VARCHAR(255)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="description" type="VARCHAR(255)"/>
+        </createTable>
+    </changeSet>
+
+    <!-- 2. Bảng Artist -->
+    <changeSet id="create-artist" author="hoang">
+        <createTable tableName="artist">
+            <column name="id" type="VARCHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="description" type="VARCHAR(255)"/>
+            <column name="name" type="VARCHAR(255)"/>
+            <column name="avatar_url" type="VARCHAR(255)"/>
+            <column name="country" type="VARCHAR(255)"/>
+            <column name="follower_count" type="BIGINT" defaultValueNumeric="0"/>
+            <column name="is_deleted" type="BIT(1)" defaultValueNumeric="0"/>
+            <column name="social_accounts" type="JSON"/>
+        </createTable>
+    </changeSet>
+
+    <!-- 3. Bảng Album -->
+    <changeSet id="create-album" author="hoang">
+        <createTable tableName="album">
+            <column name="id" type="VARCHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)"/>
+            <column name="description" type="VARCHAR(255)"/>
+            <column name="album_url" type="VARCHAR(255)"/>
+            <column name="release_date" type="DATE"/>
+            <column name="is_deleted" type="BIT(1)" defaultValueNumeric="0"/>
+        </createTable>
+    </changeSet>
+
+    <!-- 4. Bảng trung gian album_artist -->
+    <changeSet id="create-album-artist" author="hoang">
+        <createTable tableName="album_artist">
+            <column name="album_id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="artist_id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- 5. Bảng Category -->
+    <changeSet id="create-category" author="hoang">
+        <createTable tableName="category">
+            <column name="id" type="VARCHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(100)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="description" type="VARCHAR(255)"/>
+            <column name="background_color" type="VARCHAR(255)"/>
+            <column name="type" type="VARCHAR(255)"/>
+            <column name="cover_url" type="VARCHAR(255)"/>
+            <column name="active" type="BIT(1)" defaultValueNumeric="1"/>
+            <column name="display_order" type="INT"/>
+            <column name="is_deleted" type="BIT(1)" defaultValueNumeric="0"/>
+        </createTable>
+    </changeSet>
+
+    <!-- 6. Bảng trung gian song_category -->
+    <changeSet id="create-song-category" author="hoang">
+        <createTable tableName="song_category">
+            <column name="category_id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="song_id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- 7. Bảng InvalidatedToken -->
+    <changeSet id="create-invalidated-token" author="hoang">
+        <createTable tableName="invalidated_token">
+            <column name="id" type="VARCHAR(255)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="expiry_time" type="DATETIME"/>
+        </createTable>
+    </changeSet>
+
+    <!-- 8. Bảng ArtistFollow -->
+    <changeSet id="create-artist-follow" author="hoang">
+        <createTable tableName="artist_follow">
+            <column name="id" type="VARCHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="VARCHAR(36)"/>
+            <column name="artist_id" type="VARCHAR(36)"/>
+            <column name="followed_at" type="DATETIME"/>
+        </createTable>
+    </changeSet>
+
+    <!-- 9. Bảng LikeSong -->
+    <changeSet id="create-like-song" author="hoang">
+        <createTable tableName="like_song">
+            <column name="id" type="VARCHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="VARCHAR(36)"/>
+            <column name="song_id" type="VARCHAR(36)"/>
+            <column name="liked_at" type="DATETIME"/>
+        </createTable>
+    </changeSet>
+
+    <!-- 10. Bảng Lyrics -->
+    <changeSet id="create-lyrics" author="hoang">
+        <createTable tableName="lyrics">
+            <column name="id" type="VARCHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="song_id" type="VARCHAR(36)"/>
+            <column name="content" type="JSON"/>
+            <column name="is_instrumental" type="BIT(1)"/>
+        </createTable>
+    </changeSet>
+
+    <!-- 11. Bảng Notifications -->
+    <changeSet id="create-notifications" author="hoang">
+        <createTable tableName="notifications">
+            <column name="id" type="VARCHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="VARCHAR(36)"/>
+            <column name="type" type="VARCHAR(255)"/>
+            <column name="title" type="VARCHAR(255)"/>
+            <column name="message" type="TEXT"/>
+            <column name="target_url" type="VARCHAR(255)"/>
+            <column name="thumbnail" type="VARCHAR(255)"/>
+            <column name="is_read" type="BIT(1)"/>
+            <column name="created_at" type="DATETIME"/>
+        </createTable>
+    </changeSet>
+
+    <!-- 12. Bảng Orders -->
+    <changeSet id="create-orders" author="hoang">
+        <createTable tableName="orders">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="order_code" type="BIGINT">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="amount" type="INT"/>
+            <column name="description" type="VARCHAR(255)"/>
+            <column name="status" type="VARCHAR(255)"/>
+            <column name="user_email" type="VARCHAR(255)"/>
+            <column name="user_id" type="VARCHAR(36)"/>
+            <column name="plan_type" type="TINYINT"/> <!-- ĐÃ SỬA THÀNH TINYINT ĐỂ KHỚP VỚI ENUM -->
+            <column name="created_at" type="DATETIME"/>
+        </createTable>
+    </changeSet>
+
+    <!-- 13. Bảng Role -->
+    <changeSet id="create-role" author="hoang">
+        <createTable tableName="role">
+            <column name="name" type="VARCHAR(255)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="description" type="VARCHAR(255)"/>
+        </createTable>
+    </changeSet>
+
+    <!-- 14. Bảng trung gian Role_Permission -->
+    <changeSet id="create-role-permissions" author="hoang">
+        <createTable tableName="role_permissions">
+            <column name="role_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="permissions_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- 15. Bảng User -->
+    <changeSet id="create-user" author="hoang">
+        <createTable tableName="user">
+            <column name="id" type="VARCHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="username" type="VARCHAR(255)">
+                <constraints unique="true"/>
+            </column>
+            <column name="password" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)"/>
+            <column name="email" type="VARCHAR(255)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="dob" type="DATE"/>
+            <column name="enabled" type="BIT(1)"/>
+            <column name="avatar_url" type="VARCHAR(255)"/>
+            <column name="bio" type="VARCHAR(255)"/>
+            <column name="created_at" type="DATE"/>
+            <column name="is_public_profile" type="BIT(1)" defaultValueNumeric="1"/>
+            <column name="follower_count" type="BIGINT" defaultValueNumeric="0"/>
+            <column name="following_count" type="BIGINT" defaultValueNumeric="0"/>
+            <column name="premium_expiry_date" type="DATETIME"/>
+            <column name="is_premium" type="BIT(1)" defaultValueNumeric="0"/>
+            <column name="preferred_language" type="VARCHAR(255)" defaultValue="en"/>
+        </createTable>
+    </changeSet>
+
+    <!-- 16. Bảng trung gian User_Role và User_Permission -->
+    <changeSet id="create-user-roles-permissions" author="hoang">
+        <createTable tableName="user_roles">
+            <column name="user_id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="roles_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createTable tableName="user_permissions">
+            <column name="user_id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="permissions_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- 17. Bảng Playlist -->
+    <changeSet id="create-playlist" author="hoang">
+        <createTable tableName="playlist">
+            <column name="id" type="VARCHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)"/>
+            <column name="description" type="VARCHAR(255)"/>
+            <column name="cover_url" type="VARCHAR(255)"/>
+            <column name="user_id" type="VARCHAR(36)"/>
+            <column name="is_public" type="BIT(1)" defaultValueNumeric="1"/>
+            <column name="create_at" type="DATETIME"/>
+            <column name="is_default" type="BIT(1)" defaultValueNumeric="0"/>
+        </createTable>
+    </changeSet>
+
+    <!-- 18. Bảng Song -->
+    <changeSet id="create-song" author="hoang">
+        <createTable tableName="songs">
+            <column name="id" type="VARCHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="title" type="VARCHAR(255)"/>
+            <column name="artist_id" type="VARCHAR(36)"/>
+            <column name="album_id" type="VARCHAR(36)"/>
+            <column name="cover_url" type="VARCHAR(255)"/>
+            <column name="audio_url" type="VARCHAR(255)"/>
+            <column name="uploaded_by" type="VARCHAR(36)"/>
+            <column name="category_id" type="VARCHAR(36)"/>
+            <column name="created_at" type="DATETIME"/>
+            <column name="updated_at" type="DATETIME"/>
+            <column name="play_count" type="BIGINT" defaultValueNumeric="0"/>
+            <column name="stream_count" type="BIGINT" defaultValueNumeric="0"/>
+            <column name="like_count" type="BIGINT" defaultValueNumeric="0"/>
+            <column name="duration" type="DOUBLE"/>
+            <column name="is_deleted" type="BIT(1)" defaultValueNumeric="0"/>
+            <column name="release_date" type="DATE"/>
+        </createTable>
+    </changeSet>
+
+    <!-- 19. Bảng PlaylistSong -->
+    <changeSet id="create-playlist-song" author="hoang">
+        <createTable tableName="playlist_song">
+            <column name="id" type="VARCHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="playlist_id" type="VARCHAR(36)"/>
+            <column name="song_id" type="VARCHAR(36)"/>
+            <column name="added_at" type="DATE"/>
+        </createTable>
+    </changeSet>
+
+    <!-- 20. Bảng Song Performers -->
+    <changeSet id="create-song-performers" author="hoang">
+        <createTable tableName="song_performers">
+            <column name="song_id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="artist_id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- 21. Bảng SongStream -->
+    <changeSet id="create-song-streams" author="hoang">
+        <createTable tableName="song_streams">
+            <column name="id" type="VARCHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="VARCHAR(36)"/>
+            <column name="song_id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="duration" type="BIGINT"/>
+            <column name="created_at" type="DATETIME">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_valid_stream" type="BIT(1)" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="song_streams" indexName="idx_user_time">
+            <column name="user_id"/>
+            <column name="created_at"/>
+        </createIndex>
+        <createIndex tableName="song_streams" indexName="idx_song_valid">
+            <column name="song_id"/>
+            <column name="is_valid_stream"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- 22. Bảng UserBlock -->
+    <changeSet id="create-user-block" author="hoang">
+        <createTable tableName="user_block">
+            <column name="id" type="VARCHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="blocker_id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="blocked_id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="DATE"/>
+        </createTable>
+    </changeSet>
+
+    <!-- 23. Bảng UserFollow -->
+    <changeSet id="create-user-follow" author="hoang">
+        <createTable tableName="user_follow">
+            <column name="id" type="VARCHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="follower_id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="following_id" type="VARCHAR(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="followed_at" type="DATETIME"/>
+        </createTable>
+
+        <addUniqueConstraint tableName="user_follow" columnNames="follower_id, following_id" constraintName="uk_user_follow"/>
+    </changeSet>
+
+    <!-- 24. CÀI ĐẶT TOÀN BỘ KHÓA NGOẠI (Foreign Keys) Ở CUỐI CÙNG -->
+    <changeSet id="add-all-foreign-keys" author="hoang">
+        <addForeignKeyConstraint baseTableName="album_artist" baseColumnNames="album_id" constraintName="fk_album_artist_on_album" referencedTableName="album" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="album_artist" baseColumnNames="artist_id" constraintName="fk_album_artist_on_artist" referencedTableName="artist" referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="song_category" baseColumnNames="category_id" constraintName="fk_song_category_on_category" referencedTableName="category" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="song_category" baseColumnNames="song_id" constraintName="fk_song_category_on_song" referencedTableName="songs" referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="like_song" baseColumnNames="song_id" constraintName="fk_like_song_on_song" referencedTableName="songs" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="lyrics" baseColumnNames="song_id" constraintName="fk_lyrics_on_song" referencedTableName="songs" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="playlist_song" baseColumnNames="song_id" constraintName="fk_playlist_song_on_song" referencedTableName="songs" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="song_performers" baseColumnNames="song_id" constraintName="fk_song_performers_on_song" referencedTableName="songs" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="song_streams" baseColumnNames="song_id" constraintName="fk_song_streams_on_song" referencedTableName="songs" referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="artist_follow" baseColumnNames="user_id" constraintName="fk_artist_follow_on_user" referencedTableName="user" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="like_song" baseColumnNames="user_id" constraintName="fk_like_song_on_user" referencedTableName="user" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="notifications" baseColumnNames="user_id" constraintName="fk_notifications_on_user" referencedTableName="user" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="orders" baseColumnNames="user_id" constraintName="fk_orders_on_user" referencedTableName="user" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="playlist" baseColumnNames="user_id" constraintName="fk_playlist_on_user" referencedTableName="user" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="song_streams" baseColumnNames="user_id" constraintName="fk_song_streams_on_user" referencedTableName="user" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="user_block" baseColumnNames="blocker_id" constraintName="fk_user_block_on_blocker" referencedTableName="user" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="user_block" baseColumnNames="blocked_id" constraintName="fk_user_block_on_blocked" referencedTableName="user" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="user_follow" baseColumnNames="follower_id" constraintName="fk_user_follow_on_follower" referencedTableName="user" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="user_follow" baseColumnNames="following_id" constraintName="fk_user_follow_on_following" referencedTableName="user" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="songs" baseColumnNames="uploaded_by" constraintName="fk_songs_on_uploaded_by" referencedTableName="user" referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="artist_follow" baseColumnNames="artist_id" constraintName="fk_artist_follow_on_artist" referencedTableName="artist" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="songs" baseColumnNames="artist_id" constraintName="fk_songs_on_artist" referencedTableName="artist" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="songs" baseColumnNames="album_id" constraintName="fk_songs_on_album" referencedTableName="album" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="songs" baseColumnNames="category_id" constraintName="fk_songs_on_category" referencedTableName="category" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="playlist_song" baseColumnNames="playlist_id" constraintName="fk_playlist_song_on_playlist" referencedTableName="playlist" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="song_performers" baseColumnNames="artist_id" constraintName="fk_song_performers_on_artist" referencedTableName="artist" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="role_permissions" baseColumnNames="role_name" constraintName="fk_role_permissions_on_role" referencedTableName="role" referencedColumnNames="name"/>
+        <addForeignKeyConstraint baseTableName="role_permissions" baseColumnNames="permissions_name" constraintName="fk_role_permissions_on_permission" referencedTableName="permission" referencedColumnNames="name"/>
+        <addForeignKeyConstraint baseTableName="user_roles" baseColumnNames="user_id" constraintName="fk_user_roles_on_user" referencedTableName="user" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="user_roles" baseColumnNames="roles_name" constraintName="fk_user_roles_on_role" referencedTableName="role" referencedColumnNames="name"/>
+        <addForeignKeyConstraint baseTableName="user_permissions" baseColumnNames="user_id" constraintName="fk_user_permissions_on_user" referencedTableName="user" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="user_permissions" baseColumnNames="permissions_name" constraintName="fk_user_permissions_on_permission" referencedTableName="permission" referencedColumnNames="name"/>
+    </changeSet>
+
+</databaseChangeLog>
